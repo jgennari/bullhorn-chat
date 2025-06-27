@@ -156,7 +156,7 @@ defineShortcuts({
           color="neutral"
           variant="ghost"
           class="w-full"
-          @click="navigateTo('/auth/bullhorn')"
+          to="/auth/bullhorn"
         />
       </template>
     </UDashboardSidebar>
