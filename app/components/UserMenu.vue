@@ -45,7 +45,16 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
 }, {
   label: 'Log out',
   icon: 'i-lucide-log-out',
-  onSelect() {
+  async onSelect() {
+    try {
+      // Call the logout API to revoke the token
+      await $fetch('/api/auth/logout', { method: 'POST' })
+    } catch (error) {
+      // Log error but continue with logout
+      console.error('Failed to revoke token:', error)
+    }
+
+    // Clear the local session
     clear()
     navigateTo('/')
   }
