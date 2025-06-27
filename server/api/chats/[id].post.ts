@@ -110,7 +110,7 @@ export default defineEventHandler(async (event) => {
     const tools: any[] = [{
       type: 'mcp',
       server_label: 'Bullhorn',
-      server_url: 'https://mcp.bullhornlabs.app',
+      server_url: 'https://mcp.bullhornlabs.app/sse',
       require_approval: "never"
     },
     { type: "web_search_preview" }];
