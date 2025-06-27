@@ -5,14 +5,13 @@ import { eq, and } from 'drizzle-orm'
 import crypto from 'crypto'
 
 export default eventHandler(async (event) => {
-  const config = useRuntimeConfig()
   const query = getQuery(event)
   const db = useDrizzle()
   const session = await getUserSession(event)
   
   // Configuration
-  const clientId = config.oauth?.bullhorn?.clientId || process.env.NUXT_OAUTH_BULLHORN_CLIENT_ID
-  const clientSecret = config.oauth?.bullhorn?.clientSecret || process.env.NUXT_OAUTH_BULLHORN_CLIENT_SECRET
+  const clientId = process.env.NUXT_OAUTH_BULLHORN_CLIENT_ID
+  const clientSecret = process.env.NUXT_OAUTH_BULLHORN_CLIENT_SECRET
   
   // Use the request origin to build the redirect URL
   const host = getHeader(event, 'host')
@@ -176,7 +175,7 @@ export default eventHandler(async (event) => {
         providerId = parsed
       } else {
         // If not a number, use a hash of the string to create a unique numeric ID
-        providerId = Math.abs(userInfo.sub.split('').reduce((acc, char) => {
+        providerId = Math.abs(userInfo.sub.split('').reduce((acc: number, char: string) => {
           return ((acc << 5) - acc) + char.charCodeAt(0)
         }, 0))
       }
