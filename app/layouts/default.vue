@@ -4,7 +4,7 @@ import { LazyModalConfirm } from '#components'
 const route = useRoute()
 const toast = useToast()
 const overlay = useOverlay()
-const { loggedIn, openInPopup } = useUserSession()
+const { loggedIn } = useUserSession()
 
 const open = ref(false)
 
