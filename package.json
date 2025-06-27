@@ -26,6 +26,7 @@
     "drizzle-orm": "^0.44.2",
     "nuxt": "^3.17.5",
     "nuxt-auth-utils": "^0.5.20",
+    "openai": "^5.8.2",
     "shiki-stream": "^0.1.2",
     "workers-ai-provider": "^0.7.0"
   },
@@ -33,6 +34,7 @@
     "@nuxt/eslint": "^1.4.1",
     "@types/node": "^22.15.32",
     "drizzle-kit": "^0.31.1",
+    "esbuild": "^0.25.5",
     "eslint": "^9.29.0",
     "typescript": "^5.8.3",
     "vue-tsc": "^2.2.10",

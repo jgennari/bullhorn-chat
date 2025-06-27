@@ -3,8 +3,11 @@ const input = ref('')
 const loading = ref(false)
 
 const { model } = useLLM()
+const { loggedIn } = useUserSession()
 
 async function createChat(prompt: string) {
+  if (!loggedIn.value) return
+  
   input.value = prompt
   loading.value = true
   const chat = await $fetch('/api/chats', {
@@ -12,34 +15,40 @@ async function createChat(prompt: string) {
     body: { input: prompt }
   })
 
+  console.log('[Frontend] Created chat:', chat.id)
+  
+  // Small delay to ensure database commit
+  await new Promise(resolve => setTimeout(resolve, 100))
+  
   refreshNuxtData('chats')
   navigateTo(`/chat/${chat.id}`)
 }
 
 function onSubmit() {
+  if (!loggedIn.value) return
   createChat(input.value)
 }
 
 const quickChats = [
   {
-    label: 'Why use Nuxt UI Pro?',
-    icon: 'i-logos-nuxt-icon'
+    label: 'What tasks do I have today?',
+    icon: 'i-lucide-calendar-check'
   },
   {
-    label: 'Help me create a Vue composable',
-    icon: 'i-logos-vue'
+    label: 'Help me find a candidate.',
+    icon: 'i-lucide-user-search'
   },
   {
-    label: 'Tell me more about UnJS',
-    icon: 'i-logos-unjs'
+    label: 'I need to prepare for a customer meeting.',
+    icon: 'i-lucide-users'
   },
   {
-    label: 'Why should I consider VueUse?',
-    icon: 'i-logos-vueuse'
+    label: 'Why can\'t I place this candidate?',
+    icon: 'i-lucide-help-circle'
   },
   {
-    label: 'Tailwind CSS best practices',
-    icon: 'i-logos-tailwindcss-icon'
+    label: 'Pitch a job to a candidate.',
+    icon: 'i-lucide-briefcase'
   }
 ]
 </script>
@@ -59,6 +68,7 @@ const quickChats = [
         <UChatPrompt
           v-model="input"
           :status="loading ? 'streaming' : 'ready'"
+          :disabled="!loggedIn"
           class="[view-transition-name:chat-prompt]"
           variant="subtle"
           @submit="onSubmit"
@@ -86,4 +96,9 @@ const quickChats = [
       </UContainer>
     </template>
   </UDashboardPanel>
+
+  <!-- Full screen overlay when not logged in -->
+  <div v-if="!loggedIn" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+    <ModalLogin />
+  </div>
 </template>

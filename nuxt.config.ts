@@ -43,7 +43,10 @@ export default defineNuxtConfig({
 
   vite: {
     optimizeDeps: {
-      include: ['debug']
+      include: ['debug'],
+      esbuildOptions: {
+        target: 'node18'
+      }
     },
 
     $server: {

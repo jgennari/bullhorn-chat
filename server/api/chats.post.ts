@@ -8,6 +8,8 @@ export default defineEventHandler(async (event) => {
     title: '',
     userId: session.user?.id || session.id
   }).returning().get()
+  
+  console.log(`Created new chat with ID: ${chat.id} for user: ${session.user?.id || session.id}`)
 
   await db.insert(tables.messages).values({
     chatId: chat.id,

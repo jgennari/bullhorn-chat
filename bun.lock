@@ -17,6 +17,7 @@
         "drizzle-orm": "^0.44.2",
         "nuxt": "^3.17.5",
         "nuxt-auth-utils": "^0.5.20",
+        "openai": "^5.8.2",
         "shiki-stream": "^0.1.2",
         "workers-ai-provider": "^0.7.0",
       },
@@ -24,6 +25,7 @@
         "@nuxt/eslint": "^1.4.1",
         "@types/node": "^22.15.32",
         "drizzle-kit": "^0.31.1",
+        "esbuild": "^0.25.5",
         "eslint": "^9.29.0",
         "typescript": "^5.8.3",
         "vue-tsc": "^2.2.10",
@@ -1798,6 +1800,8 @@
     "oniguruma-to-es": ["oniguruma-to-es@4.3.3", "", { "dependencies": { "oniguruma-parser": "^0.12.1", "regex": "^6.0.1", "regex-recursion": "^6.0.2" } }, "sha512-rPiZhzC3wXwE59YQMRDodUwwT9FZ9nNBwQQfsd1wfdtlKEyCdRV0avrTcSZ5xlIvGRVPd/cx6ZN45ECmS39xvg=="],
 
     "open": ["open@10.1.2", "", { "dependencies": { "default-browser": "^5.2.1", "define-lazy-prop": "^3.0.0", "is-inside-container": "^1.0.0", "is-wsl": "^3.1.0" } }, "sha512-cxN6aIDPz6rm8hbebcP7vrQNhvRcveZoJU72Y7vskh4oIm+BZwBECnx5nTmrlres1Qapvx27Qo1Auukpf8PKXw=="],
+
+    "openai": ["openai@5.8.2", "", { "peerDependencies": { "ws": "^8.18.0", "zod": "^3.23.8" }, "optionalPeers": ["ws", "zod"], "bin": { "openai": "bin/cli" } }, "sha512-8C+nzoHYgyYOXhHGN6r0fcb4SznuEn1R7YZMvlqDbnCuE0FM2mm3T1HiYW6WIcMS/F1Of2up/cSPjLPaWt0X9Q=="],
 
     "openid-client": ["openid-client@6.6.1", "", { "dependencies": { "jose": "^6.0.11", "oauth4webapi": "^3.5.3" } }, "sha512-GmqoICGMI3IyFFjhvXxad8of4QWk2D0tm4vdJkldGm9nw7J3p1f7LPLWgGeFuKuw8HjDVe8Dd8QLGBe0NFvSSg=="],
 

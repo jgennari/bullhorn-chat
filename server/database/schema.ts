@@ -8,8 +8,9 @@ export const users = sqliteTable('users', {
   name: text().notNull(),
   avatar: text().notNull(),
   username: text().notNull(),
-  provider: text({ enum: ['github'] }).notNull(),
+  provider: text({ enum: ['bullhorn'] }).notNull(),
   providerId: integer().notNull(),
+  accessToken: text(),
   createdAt: integer({ mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, t => [
   unique().on(t.provider, t.providerId)
@@ -23,6 +24,7 @@ export const chats = sqliteTable('chats', {
   id: text().primaryKey().$defaultFn(() => randomUUID()),
   title: text(),
   userId: text().notNull(),
+  lastResponseId: text(),
   createdAt: integer({ mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, t => [
   index('userIdIdx').on(t.userId)

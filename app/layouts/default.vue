@@ -26,6 +26,9 @@ const { data: chats, refresh: refreshChats } = await useFetch('/api/chats', {
   }))
 })
 
+// Expose refresh function globally
+provide('refreshChats', refreshChats)
+
 onNuxtReady(async () => {
   const first10 = (chats.value || []).slice(0, 10)
   for (const chat of first10) {
@@ -148,12 +151,12 @@ defineShortcuts({
         <UserMenu v-if="loggedIn" :collapsed="collapsed" />
         <UButton
           v-else
-          :label="collapsed ? '' : 'Login with GitHub'"
-          icon="i-simple-icons-github"
+          :label="collapsed ? '' : 'Login with Bullhorn'"
+          icon="i-lucide-log-in"
           color="neutral"
           variant="ghost"
           class="w-full"
-          @click="openInPopup('/auth/github')"
+          @click="openInPopup('/auth/bullhorn')"
         />
       </template>
     </UDashboardSidebar>

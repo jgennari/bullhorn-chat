@@ -12,9 +12,11 @@ const route = useRoute()
 const toast = useToast()
 const clipboard = useClipboard()
 const { model } = useLLM()
+const refreshChats = inject<() => Promise<void>>('refreshChats')
 
 const { data: chat } = await useFetch(`/api/chats/${route.params.id}`, {
-  cache: 'force-cache'
+  // Don't use cache for new chats
+  cache: 'no-cache'
 })
 if (!chat.value) {
   throw createError({ statusCode: 404, statusMessage: 'Chat not found', fatal: true })
@@ -32,8 +34,14 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
     model: model.value
   },
   onResponse(response) {
-    if (response.headers.get('X-Chat-Title')) {
-      refreshNuxtData('chats')
+    const title = response.headers.get('X-Chat-Title')
+    if (title) {
+      // Update the current chat object
+      chat.value.title = title
+      // Use the injected refresh function
+      if (refreshChats) {
+        refreshChats()
+      }
     }
   },
   onError(error) {

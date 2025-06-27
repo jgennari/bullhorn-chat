@@ -2,6 +2,7 @@ CREATE TABLE `chats` (
 	`id` text PRIMARY KEY NOT NULL,
 	`title` text,
 	`userId` text NOT NULL,
+	`lastResponseId` text,
 	`createdAt` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
@@ -24,6 +25,7 @@ CREATE TABLE `users` (
 	`username` text NOT NULL,
 	`provider` text NOT NULL,
 	`providerId` integer NOT NULL,
+	`accessToken` text,
 	`createdAt` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
