@@ -10,15 +10,15 @@ useHead({
     { key: 'theme-color', name: 'theme-color', content: color }
   ],
   link: [
-    { rel: 'icon', href: '/favicon.ico' }
+    { rel: 'icon', type: 'image/svg+xml', href: '/bullhorn.svg' }
   ],
   htmlAttrs: {
     lang: 'en'
   }
 })
 
-const title = 'Nuxt AI Chatbot template'
-const description = 'A full-featured, hackable Nuxt AI chatbot template made with Nuxt UI Pro.'
+const title = 'Bullhorn Chat'
+const description = 'AI-powered chat assistant for Bullhorn ATS with live data access.'
 
 useSeoMeta({
   title,
