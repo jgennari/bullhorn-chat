@@ -110,6 +110,12 @@ export default eventHandler(async (event) => {
     
     const { access_token, id_token } = tokenResponse
     
+    console.log('Token response received:', { 
+      has_access_token: !!access_token, 
+      has_id_token: !!id_token,
+      token_preview: access_token ? `${access_token.substring(0, 10)}...` : 'none'
+    })
+    
     if (!access_token) {
       throw createError({
         statusCode: 500,
@@ -118,60 +124,112 @@ export default eventHandler(async (event) => {
     }
     
     // Get user info from ID token or userinfo endpoint
-    let userInfo: any = {}
+    let userInfo: any = null
     
     if (id_token) {
       // Decode ID token (without verification for now - in production, verify the JWT)
-      const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString())
-      userInfo = payload
-    } else {
-      // Fallback to userinfo endpoint if available
+      try {
+        const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString())
+        userInfo = payload
+        console.log('Got user info from ID token:', { sub: payload.sub, email: payload.email })
+      } catch (e) {
+        console.error('Failed to decode ID token:', e)
+      }
+    }
+    
+    // If no ID token, try userinfo endpoint
+    if (!userInfo) {
       try {
         userInfo = await ofetch('https://mcp.bullhornlabs.app/userinfo', {
           headers: {
             Authorization: `Bearer ${access_token}`
           }
         })
+        console.log('Got user info from userinfo endpoint:', { sub: userInfo.sub, email: userInfo.email })
       } catch (e) {
-        // If userinfo fails, use minimal info
-        userInfo = {
-          sub: 'bullhorn-user',
-          email: 'user@bullhorn.com',
-          name: 'Bullhorn User'
-        }
+        console.error('Failed to get userinfo:', e)
+        
+        // If we can't get user info, authentication fails
+        throw createError({
+          statusCode: 500,
+          statusMessage: 'Failed to retrieve user information from Bullhorn'
+        })
       }
     }
+    
+    // Ensure we have a unique identifier
+    if (!userInfo.sub) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'No user identifier found in authentication response'
+      })
+    }
+    
+    // Parse provider ID - handle both numeric and string IDs
+    let providerId: number
+    if (typeof userInfo.sub === 'number') {
+      providerId = userInfo.sub
+    } else if (typeof userInfo.sub === 'string') {
+      // Try to parse as number first
+      const parsed = parseInt(userInfo.sub)
+      if (!isNaN(parsed)) {
+        providerId = parsed
+      } else {
+        // If not a number, use a hash of the string to create a unique numeric ID
+        providerId = Math.abs(userInfo.sub.split('').reduce((acc, char) => {
+          return ((acc << 5) - acc) + char.charCodeAt(0)
+        }, 0))
+      }
+    } else {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Invalid user identifier format'
+      })
+    }
+    
+    console.log(`User identification: sub=${userInfo.sub}, providerId=${providerId}`)
     
     // Find or create user
     let user = await db.query.users.findFirst({
       where: (user, { eq }) => and(
         eq(user.provider, 'bullhorn'),
-        eq(user.providerId, parseInt(userInfo.sub) || 0)
+        eq(user.providerId, providerId)
       )
     })
     
     if (!user) {
       // Create new user
+      const userName = userInfo.name || userInfo.preferred_username || userInfo.email?.split('@')[0] || `User${providerId}`
+      
       user = await db.insert(tables.users).values({
         id: session.id, // Use session ID as user ID for continuity
-        name: userInfo.name || userInfo.preferred_username || 'Bullhorn User',
+        name: userName,
         email: userInfo.email || `${userInfo.sub}@bullhorn.com`,
-        avatar: userInfo.picture || 'https://ui-avatars.com/api/?name=Bullhorn+User',
-        username: userInfo.preferred_username || userInfo.sub || 'bullhorn-user',
+        avatar: userInfo.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}`,
+        username: userInfo.preferred_username || userInfo.email?.split('@')[0] || `user${providerId}`,
         provider: 'bullhorn',
-        providerId: parseInt(userInfo.sub) || 0,
+        providerId: providerId,
         accessToken: access_token
       }).returning().get()
+      
+      console.log(`Created new user: ${user.id} for Bullhorn user ${userInfo.sub}`)
     } else {
+      console.log(`Found existing user: ${user.id} for Bullhorn user ${userInfo.sub}`)
+      
       // Update existing user's access token
       await db.update(tables.users)
         .set({ accessToken: access_token })
         .where(eq(tables.users.id, user.id))
       
       // Migrate anonymous chats to authenticated user
-      await db.update(tables.chats)
+      const migrated = await db.update(tables.chats)
         .set({ userId: user.id })
         .where(eq(tables.chats.userId, session.id))
+        .returning()
+      
+      if (migrated.length > 0) {
+        console.log(`Migrated ${migrated.length} anonymous chats to user ${user.id}`)
+      }
     }
     
     // Set user session
