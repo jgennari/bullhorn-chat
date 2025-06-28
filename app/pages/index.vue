@@ -35,7 +35,7 @@ const quickChats = [
     icon: 'i-lucide-clipboard-list'
   },
   {
-    label: 'Show me open jobs that don’t have any candidates yet.',
+    label: 'Show me open jobs that don’t have any submissions yet.',
     icon: 'i-lucide-inbox'
   },
   {
