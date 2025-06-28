@@ -221,6 +221,10 @@ export default eventHandler(async (event) => {
       }).returning().get()
       
       console.log(`Created new user: ${user.id} for Bullhorn user ${userInfo.sub}`)
+      
+      // TODO: Track user signup in Datadog
+      // For server-side tracking, we would need to use @datadog/dd-trace
+      // For now, we'll track this on the client side when the user first logs in
     } else {
       console.log(`Found existing user: ${user.id} for Bullhorn user ${userInfo.sub}`)
       

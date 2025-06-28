@@ -15,6 +15,11 @@ const clipboard = useClipboard()
 const { model } = useLLM()
 const refreshChats = inject<() => Promise<void>>('refreshChats')
 
+// Only use Datadog on client side
+const { trackMessageSent } = process.client 
+  ? useDatadog() 
+  : { trackMessageSent: () => {} }
+
 const { data: chat } = await useFetch(`/api/chats/${route.params.id}`, {
   // Don't use cache for new chats
   cache: 'no-cache'
@@ -56,6 +61,16 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
   }
 })
 
+// Wrap handleSubmit to track message sends
+const handleSubmitWithTracking = (e?: Event) => {
+  // Track message before sending
+  if (input.value && chat.value) {
+    trackMessageSent(chat.value.id, input.value.length, 'user')
+  }
+  // Call the original handleSubmit
+  return handleSubmit(e)
+}
+
 const copied = ref(false)
 
 function copy(e: MouseEvent, message: Message) {
@@ -96,7 +111,6 @@ onMounted(() => {
               :cache-key="message.id"
               :components="components"
               :parser-options="{ highlight: false }"
-              :prose="false"
             />
           </template>
         </UChatMessages>
@@ -106,7 +120,7 @@ onMounted(() => {
           :error="error"
           variant="subtle"
           class="sticky bottom-0 [view-transition-name:chat-prompt] rounded-b-none z-10"
-          @submit="handleSubmit"
+          @submit="handleSubmitWithTracking"
         >
           <UChatPromptSubmit
             :status="status"

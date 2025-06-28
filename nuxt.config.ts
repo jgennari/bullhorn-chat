@@ -41,6 +41,16 @@ export default defineNuxtConfig({
     database: true
   },
 
+  runtimeConfig: {
+    public: {
+      datadogApplicationId: '',
+      datadogClientToken: '',
+      datadogSite: 'datadoghq.com',
+      datadogServiceName: 'bullhorn-chat',
+      datadogEnv: 'development'
+    }
+  },
+
   vite: {
     optimizeDeps: {
       include: ['debug'],

@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
           model: 'gpt-3.5-turbo',
           messages: [{
             role: 'system',
-            content: `Generate a short title (max 30 chars) for a chat that starts with: "${lastMessage.content}". No quotes or punctuation.`
+            content: `Generate a short title (max 30 chars) for a chat that starts with: "${lastMessage.content}". No quotes or punctuation. Keep it professional and concise.`
           }],
           max_tokens: 20
         })

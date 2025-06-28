@@ -4,7 +4,12 @@ import { LazyModalConfirm } from '#components'
 const route = useRoute()
 const toast = useToast()
 const overlay = useOverlay()
-const { loggedIn } = useUserSession()
+const { loggedIn, user } = useUserSession()
+
+// Only use Datadog on client side
+const { setUserContext, trackChatNavigation } = process.client 
+  ? useDatadog() 
+  : { setUserContext: () => {}, trackChatNavigation: () => {} }
 
 const open = ref(false)
 
@@ -43,6 +48,17 @@ watch(loggedIn, () => {
   open.value = false
 })
 
+// Set user context in Datadog when user is available
+watch(user, (newUser) => {
+  if (newUser && newUser.id) {
+    setUserContext({
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name
+    })
+  }
+}, { immediate: true })
+
 const { groups } = useChats(chats)
 
 const items = computed(() => groups.value?.flatMap((group) => {
@@ -53,7 +69,11 @@ const items = computed(() => groups.value?.flatMap((group) => {
     ...item,
     slot: 'chat' as const,
     icon: undefined,
-    class: item.label === 'Untitled' ? 'text-muted' : ''
+    class: item.label === 'Untitled' ? 'text-muted' : '',
+    onClick: () => {
+      // Track chat navigation
+      trackChatNavigation(item.id, item.createdAt, 'sidebar')
+    }
   }))]
 }))
 
