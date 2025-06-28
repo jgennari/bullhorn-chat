@@ -1,4 +1,4 @@
-import { eventHandler, getQuery, sendRedirect, createError, setCookie, getCookie, getHeader } from 'h3'
+import { eventHandler, getQuery, sendRedirect, createError, setCookie, getCookie } from 'h3'
 import { withQuery } from 'ufo'
 import { ofetch } from 'ofetch'
 import { eq, and } from 'drizzle-orm'
@@ -12,14 +12,23 @@ export default eventHandler(async (event) => {
   // Configuration
   const clientId = process.env.NUXT_OAUTH_BULLHORN_CLIENT_ID
   const clientSecret = process.env.NUXT_OAUTH_BULLHORN_CLIENT_SECRET
+  const mcpBaseURL = process.env.NUXT_BULLHORN_MCP_URL
+  const baseURL = process.env.NUXT_BASE_URL
+
+  if (!mcpBaseURL) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Bullhorn MCP URL is not configured'
+    })
+  }
+  console.log(`Using Bullhorn MCP URL: ${mcpBaseURL}`)
   
   // Use the request origin to build the redirect URL
-  const host = getHeader(event, 'host')
-  const protocol = getHeader(event, 'x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https')
-  const redirectURL = `${protocol}://${host}/auth/bullhorn`
+  const redirectURL = `${baseURL}/auth/bullhorn`
   
-  const authorizationURL = 'https://mcp.bullhornlabs.app/authorize'
-  const tokenURL = 'https://mcp.bullhornlabs.app/token'
+  const authorizationURL = `${mcpBaseURL}/authorize`
+  const tokenURL = `${mcpBaseURL}/token`
+  console.log(`Bullhorn authorization URL: ${authorizationURL}`)
   
   if (!clientId || !clientSecret) {
     throw createError({
@@ -139,7 +148,7 @@ export default eventHandler(async (event) => {
     // If no ID token, try userinfo endpoint
     if (!userInfo) {
       try {
-        userInfo = await ofetch('https://mcp.bullhornlabs.app/userinfo', {
+        userInfo = await ofetch(`${mcpBaseURL}/userinfo`, {
           headers: {
             Authorization: `Bearer ${access_token}`
           }

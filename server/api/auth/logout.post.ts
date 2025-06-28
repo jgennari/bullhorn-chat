@@ -35,12 +35,13 @@ export default eventHandler(async (event) => {
     try {
       const clientId = process.env.NUXT_OAUTH_BULLHORN_CLIENT_ID
       const clientSecret = process.env.NUXT_OAUTH_BULLHORN_CLIENT_SECRET
+      const mcpBaseURL = process.env.NUXT_BULLHORN_MCP_URL || 'https://mcp.bullhornlabs.app'
 
       if (!clientId || !clientSecret) {
         console.error('Missing Bullhorn OAuth configuration for revoke')
       } else {
         // Call the revoke endpoint
-        await ofetch('https://mcp.bullhornlabs.app/revoke', {
+        await ofetch(`${mcpBaseURL}/revoke`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded'

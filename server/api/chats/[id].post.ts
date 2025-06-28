@@ -107,10 +107,11 @@ export default defineEventHandler(async (event) => {
     let responseId: string | undefined
 
     // Build tools configuration with headers if authenticated
+    const mcpBaseURL = process.env.NUXT_BULLHORN_MCP_URL || 'https://mcp.bullhornlabs.app'
     const tools: any[] = [{
       type: 'mcp',
       server_label: 'Bullhorn',
-      server_url: 'https://mcp.bullhornlabs.app/sse',
+      server_url: `${mcpBaseURL}/sse`,
       require_approval: "never"
     },
     { type: "web_search_preview" }];
