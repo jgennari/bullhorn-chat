@@ -127,7 +127,7 @@ export default defineEventHandler(async (event) => {
     const runner = (openai as any).responses.stream({
       model: model || 'gpt-4.1',
       input: lastMessage.content,
-      instructions: 'You are a helpful assistant named Ferdinand that works for Bullhorn, an ATS software system. Your job is to help users access Bullhorn data and complete their tasks.',
+      instructions: 'You are a helpful assistant named Ferdinand that works for Bullhorn, an ATS software system. Your job is to help users access Bullhorn data and complete their tasks. Read bullhorn://instructions for more instructions.',
       tools: tools,
       previous_response_id: chat.lastResponseId || undefined
     })
