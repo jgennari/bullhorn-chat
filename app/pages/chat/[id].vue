@@ -35,7 +35,7 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
   },
   onResponse(response) {
     const title = response.headers.get('X-Chat-Title')
-    if (title) {
+    if (title && chat.value) {
       // Update the current chat object
       chat.value.title = title
       // Use the injected refresh function
@@ -93,7 +93,6 @@ onMounted(() => {
             <MDCCached
               :value="message.content"
               :cache-key="message.id"
-              unwrap="p"
               :components="components"
               :parser-options="{ highlight: false }"
             />
