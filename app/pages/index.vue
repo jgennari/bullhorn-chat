@@ -32,23 +32,23 @@ function onSubmit() {
 const quickChats = [
   {
     label: 'What tasks do I have today?',
-    icon: 'i-lucide-calendar-check'
+    icon: 'i-lucide-clipboard-list'
   },
   {
-    label: 'Help me find a candidate.',
-    icon: 'i-lucide-user-search'
+    label: 'Show me open jobs that don’t have any candidates yet.',
+    icon: 'i-lucide-inbox'
   },
   {
-    label: 'I need to prepare for a customer meeting.',
-    icon: 'i-lucide-users'
+    label: 'Which jobs have been open the longest?',
+    icon: 'i-lucide-clock'
   },
   {
-    label: 'Why can\'t I place this candidate?',
-    icon: 'i-lucide-help-circle'
+    label: 'What client meetings do I have this week?',
+    icon: 'i-lucide-calendar-days'
   },
   {
-    label: 'Pitch a job to a candidate.',
-    icon: 'i-lucide-briefcase'
+    label: 'Find me candidates submitted in the last 7 days.',
+    icon: 'i-lucide-user-check'
   }
 ]
 </script>
