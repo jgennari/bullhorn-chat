@@ -5,7 +5,8 @@ import { useClipboard } from '@vueuse/core'
 import ProseStreamPre from '../../components/prose/PreStream.vue'
 
 const components = {
-  pre: ProseStreamPre as unknown as DefineComponent
+  pre: ProseStreamPre as unknown as DefineComponent,
+  p: 'p' // Use regular p tag instead of prose-p
 }
 
 const route = useRoute()
@@ -95,6 +96,7 @@ onMounted(() => {
               :cache-key="message.id"
               :components="components"
               :parser-options="{ highlight: false }"
+              :prose="false"
             />
           </template>
         </UChatMessages>
