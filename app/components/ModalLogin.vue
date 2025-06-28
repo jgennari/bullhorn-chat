@@ -6,7 +6,7 @@ function handleLogin() {
 </script>
 
 <template>
-  <div class="rounded-lg shadow-xl w-full max-w-sm mx-4" style="background-color: var(--ui-bg)">
+  <div class="rounded-lg shadow-xl w-full max-w-xl mx-4" style="background-color: var(--ui-bg)">
     <div class="text-center p-8">
       <!-- Logo and Chat title -->
       <div class="flex items-end justify-center gap-0.5 mb-6">
@@ -15,23 +15,30 @@ function handleLogin() {
       </div>
 
       <!-- Warning message -->
-      <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-        <p class="text-sm text-yellow-800 dark:text-yellow-200 font-semibold">
+      <div
+        class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <p class="text-md text-black dark:text-white font-semibold">
           Experimental Feature
         </p>
-        <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
-          This AI assistant has access to live Bullhorn data. Please use caution when working with sensitive information and verify all AI-generated responses.
+        <p class="text-sm text-black dark:text-white mt-2 text-left">
+          This AI assistant can access and modify your live Bullhorn data. Before proceeding, please be aware:
+        </p>
+        <ul class="list-disc list-inside mt-2 text-sm text-black dark:text-white text-left space-y-3">
+          <li>Data Access: The assistant can view, search, and analyze your Bullhorn records including candidates, job
+            orders, and client information</li>
+          <li>Modification Capabilities: The assistant can create, update, and delete records in your system</li>
+          <li>Verification Required: Always review AI-generated responses and verify any data changes before finalizing
+          </li>
+          <li>Sensitive Information: Exercise extra caution when discussing confidential candidate or client details
+          </li>
+        </ul>
+        <p class="text-sm text-black dark:text-white mt-2 text-left">
+          By continuing, you acknowledge this is experimental technology and agree to use appropriate oversight.
         </p>
       </div>
 
       <!-- Login button -->
-      <UButton
-        label="Login with Bullhorn"
-        icon="i-lucide-log-in"
-        size="lg"
-        class="w-full"
-        @click="handleLogin"
-      />
+      <UButton label="Login with Bullhorn" icon="i-lucide-log-in" size="lg" class="w-full" @click="handleLogin" />
     </div>
   </div>
 </template>
