@@ -133,7 +133,7 @@ export default defineEventHandler(async (event) => {
 
         Rules
         -----
-        
+
         - **Never** use NULL values when updating or creating data, always use empty strings or arrays.
         - **Always** convert dates from epoch (millis) to formatted date and times when displaying for the user.
         - **Always** check the meta data (\`get_entities\` and \`get_entity_fields\`) before working with data.
@@ -149,19 +149,12 @@ export default defineEventHandler(async (event) => {
         -------------
 
         **Candidate** - Represents job seekers. Contains personal information and many associated records (education, work history, skills, etc.). First create the Candidate, then use separate calls to modify relationships. **Does not support** \`/query\` endpoint - use \`/search\` for filtered retrieval.
-
         **ClientContact** - Contact person at a client corporation. Linked to ClientCorporation via \`clientCorporation\` (to-one). Other associations include owner (recruiter) and related notes/activities.
-
         **ClientCorporation** - Client companies we hire for.
-
         **JobOrder** - Job opening/requisition. 
-
         **JobSubmission** - Links Candidates to JobOrders (submissions).
-
         **Placement** - Finalized hiring of a Candidate at a JobOrder. 
-
         **Note** - Tracks interactions/comments linked to other records. **Does not support** \`/query\` - use \`/search/Note\` for filtered retrieval.
-
         **Tearsheet** - Allows users to manage collections of candidates, client contacts, job orders, opportunties and leads. Use the entity (\`Candidate\`,\`ClientContact\`, etc.) collection on the \`Tearsheet\` entitity to add entities to tearsheets.
 
         Schema and Consistency
