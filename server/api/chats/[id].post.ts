@@ -132,6 +132,7 @@ export default defineEventHandler(async (event) => {
         do your best to make sure they have what they need. 
         Follow these rules:
         - **Stop** and read bullhorn://instructions before continuing. 
+        - **Never** use NULL values when updating or creating data, always use empty strings or arrays.
         - **Always** convert dates from epoch (millis) to formatted date and times when displaying for the user.
         - **Always** check the meta data (\`get_entities\` and \`get_entity_fields\`) before working with data.
         Access bullhorn://current_user and bullhorn://important_times for more context about the user and the current time. 
