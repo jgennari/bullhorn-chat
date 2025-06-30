@@ -134,9 +134,10 @@ export default defineEventHandler(async (event) => {
         Rules
         -----
 
-        - **Never** use NULL values when updating or creating data, always use empty strings or arrays.
         - **Always** convert dates from epoch (millis) to formatted date and times when displaying for the user.
         - **Always** check the meta data (\`get_entities\` and \`get_entity_fields\`) before working with data.
+        - **Only** send the fields you need to update in the update_entity calls.
+        - **Always** associate date you have in your context (add note, associate candidate; schedule a task, associate client contact)
 
         Best Practices
         --------------
@@ -148,21 +149,21 @@ export default defineEventHandler(async (event) => {
         Core Entities
         -------------
 
-        **Candidate** - Represents job seekers. Contains personal information and many associated records (education, work history, skills, etc.). First create the Candidate, then use separate calls to modify relationships. **Does not support** \`/query\` endpoint - use \`/search\` for filtered retrieval.
+        **Candidate** - Represents job seekers. Contains personal information and many associated records (education, work history, skills, etc.). 
         **ClientContact** - Contact person at a client corporation. Linked to ClientCorporation via \`clientCorporation\` (to-one). Other associations include owner (recruiter) and related notes/activities.
-        **ClientCorporation** - Client companies we hire for.
-        **JobOrder** - Job opening/requisition. 
-        **JobSubmission** - Links Candidates to JobOrders (submissions).
-        **Placement** - Finalized hiring of a Candidate at a JobOrder. 
-        **Note** - Tracks interactions/comments linked to other records. **Does not support** \`/query\` - use \`/search/Note\` for filtered retrieval.
-        **Tearsheet** - Allows users to manage collections of candidates, client contacts, job orders, opportunties and leads. Use the entity (\`Candidate\`,\`ClientContact\`, etc.) collection on the \`Tearsheet\` entitity to add entities to tearsheets.
+        **ClientCorporation** - Client companies we fill jobs for. Contains company information and associations to contacts, jobs, opportunities, etc.
+        **JobOrder** - Job opening/requisition. Contains job details, requirements, and associations to candidates, client contacts, and placements.
+        **JobSubmission** - Links Candidates to JobOrders (submissions). Contains status, date submitted, and associations to candidates and job orders.
+        **Placement** - Finalized hiring of a Candidate at a JobOrder. Contains placement details, dates, and associations to candidates and job orders.
+        **Note** - Tracks interactions/comments linked to other records. **Does not support** \`/query\` - use \`/search/Note\` for filtered retrieval. Associated with entities like candidates, contacts, jobs, leads, opportunities, placements, etc.
+        **Tearsheet** - Allows users to manage collections of candidates, client contacts, job orders, opportunties and leads. Use the entity (\`Candidate\`,\`ClientContact\`, etc.) collection on the \`Tearsheet\` entitity to associate entities.
 
         Schema and Consistency
         ----------------------
 
         **Picklists:** Many fields store codes/IDs referencing option lists. Retrieve actual values via \`get_entity_fields\`. Use correct option ID when setting fields.
-
-        **Data Integrity:** Bullhorn enforces referential rules (e.g. JobSubmission requires valid Candidate + JobOrder). Check metadata for required fields and validation errors in responses.
+        **TO-ONE Associations:** Use associatedEntity { id: 123 } to set relationships. For example, \`clientCorporation\` on a \`ClientContact\`.
+        **TO-MANY Associations:** Use \`add_association\` to add entities to collections (e.g. \`add_association('candidates', { id: 123 })\`). For example, \`candidates\` on a \`Tearsheet\`.
 
         Query and Search
         ----------------
@@ -170,14 +171,11 @@ export default defineEventHandler(async (event) => {
         **Search Endpoints (\`search_entities\` or \`search_{entity}\`)** - Lucene-based index for keyword searches and partial matches. Use for indexed entities and full-text search.
         - Lucene syntax: boolean operators (AND, OR, NOT), wildcards (* and ?), range queries
         - Date format for ranges: 1751173649000 e.g. \`dateLastModified:[1750914449000 TO 1751173649000]\`
-
         **Query Endpoint (\`query_entities\`)** - SQL/JPQL-like filtering on entity data. Use for non-indexed entities or exact field matching.
         - Operators: =, <>, >, <, >=, <=, AND, OR
         - String values in single quotes: \`status='Active'\`
         - Limited wildcard support compared to search
-
         **Pagination:** Both endpoints support \`start\` (offset) and \`count\` (page size). Default count: 20, Max: 500. May be reduced for wide field requests.
-
         **Field Selection:** Use \`fields\` parameter to specify fields (e.g. \`fields=id,firstName,lastName,email\`). Can request associated fields: \`clientCorporation(name)\`. Avoid \`fields=*\` for performance. To-many associations return limited subset by default.`,
       tools: tools,
       previous_response_id: chat.lastResponseId || undefined
