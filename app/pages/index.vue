@@ -31,7 +31,7 @@ function onSubmit() {
 
 const quickChats = [
   {
-    label: 'What tasks do I have today?',
+    label: 'Summarize my open tasks in a table.',
     icon: 'i-lucide-clipboard-list'
   },
   {
