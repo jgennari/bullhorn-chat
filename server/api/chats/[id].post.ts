@@ -134,7 +134,8 @@ export default defineEventHandler(async (event) => {
         Rules
         -----
 
-        - **Always** convert dates from epoch (millis) to localized, formatted dates for the user. Use the \`format_epoch_timestamp\` and \`generate_timestamp\` tools for user timezone-aware conversions.
+        - **Always** convert dates from epoch (millis) to localized, formatted dates for the user. Use the \`format_epoch_timestamp\` tool for user timezone-aware conversions.
+        - Use the  \`generate_timestamp\` tool to generate epoch timestamps when querying or updating/creating entities. When using \`search_entities\`, use the lucen-style output.
         - **Always** check the meta data (\`get_entities\` and \`get_entity_fields\`) before working with data.
         - **Only** send the fields you need to update in the update_entity calls.
         - **Always** associate date you have in your context (add note AND THEN associate candidate; schedule a task AND THEN associate client contact)
