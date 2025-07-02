@@ -40,9 +40,15 @@ async function pollForTitle() {
     return
   }
 
+  // Clear any existing interval
+  if (titlePollingInterval.value) {
+    clearInterval(titlePollingInterval.value)
+    titlePollingInterval.value = null
+  }
+
   let pollCount = 0
   const maxPolls = 30 // 30 * 2 seconds = 1 minute max
-
+  
   titlePollingInterval.value = setInterval(async () => {
     pollCount++
 
@@ -55,25 +61,29 @@ async function pollForTitle() {
           chat.value.title = updatedChat.title
         }
 
-        // Refresh the sidebar
-        if (refreshChats) {
-          await refreshChats()
-        }
-
-        // Stop polling
+        // Stop polling FIRST before refreshing
         if (titlePollingInterval.value) {
           clearInterval(titlePollingInterval.value)
           titlePollingInterval.value = null
         }
+
+        // Then refresh the sidebar
+        if (refreshChats) {
+          await refreshChats()
+        }
+        
+        return // Exit early
       }
     } catch (e) {
       console.error('Error polling for title:', e)
     }
 
     // Stop polling after max attempts
-    if (pollCount >= maxPolls && titlePollingInterval.value) {
-      clearInterval(titlePollingInterval.value)
-      titlePollingInterval.value = null
+    if (pollCount >= maxPolls) {
+      if (titlePollingInterval.value) {
+        clearInterval(titlePollingInterval.value)
+        titlePollingInterval.value = null
+      }
     }
   }, 2000) // Poll every 2 seconds
 }

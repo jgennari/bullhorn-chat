@@ -76,7 +76,6 @@ export default defineEventHandler(async (event) => {
           // Clean the title and save to database
           const cleanedTitle = title.replace(/:/g, '').split('\n')[0]
           await db.update(tables.chats).set({ title: cleanedTitle }).where(eq(tables.chats.id, id as string))
-          console.log(`Title generated for chat ${id}: ${cleanedTitle}`)
         } catch (e) {
           console.log('Error generating title:', e)
         }
