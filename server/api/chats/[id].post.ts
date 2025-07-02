@@ -7,41 +7,6 @@ defineRouteMeta({
   }
 })
 
-// Background function to generate chat title
-async function generateChatTitle(
-  openai: OpenAI, 
-  db: any, 
-  chatId: string, 
-  lastMessageContent: string,
-  event: any
-) {
-  try {
-    const titleResponse = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{
-        role: 'system',
-        content: `Generate a short title (max 30 chars) for a chat that starts with: "${lastMessageContent}". No quotes or punctuation. Keep it professional and concise.`
-      }],
-      max_tokens: 20
-    })
-    const title = titleResponse.choices[0]?.message?.content || 'Untitled'
-
-    // Clean the title and save to database
-    const cleanedTitle = title.replace(/:/g, '').split('\n')[0]
-    
-    // Try to set header if event is still active
-    try {
-      setHeader(event, 'X-Chat-Title', cleanedTitle)
-    } catch (e) {
-      // Event may have already been sent, ignore header error
-    }
-    
-    await db.update(tables.chats).set({ title: cleanedTitle }).where(eq(tables.chats.id, chatId))
-  } catch (e) {
-    console.error('Error generating title:', e)
-    throw e
-  }
-}
 
 export default defineEventHandler(async (event) => {
   try {
@@ -93,12 +58,29 @@ export default defineEventHandler(async (event) => {
     // Get the latest message
     const lastMessage = messages[messages.length - 1]
 
-    // Generate title in background if needed
+    // Start title generation promise if needed
+    let titlePromise: Promise<void> | null = null
     if (!chat.title) {
-      // Fire and forget - no await
-      generateChatTitle(openai, db, id as string, lastMessage.content, event).catch(e => {
-        console.log('Background title generation error:', e)
-      })
+      titlePromise = (async () => {
+        try {
+          const titleResponse = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [{
+              role: 'system',
+              content: `Generate a short title (max 30 chars) for a chat that starts with: "${lastMessage.content}". No quotes or punctuation. Keep it professional and concise.`
+            }],
+            max_tokens: 20
+          })
+          const title = titleResponse.choices[0]?.message?.content || 'Untitled'
+
+          // Clean the title and save to database
+          const cleanedTitle = title.replace(/:/g, '').split('\n')[0]
+          setHeader(event, 'X-Chat-Title', cleanedTitle)
+          await db.update(tables.chats).set({ title: cleanedTitle }).where(eq(tables.chats.id, id as string))
+        } catch (e) {
+          console.log('Error generating title:', e)
+        }
+      })()
     }
 
     // Save user message if it's new
@@ -220,6 +202,11 @@ export default defineEventHandler(async (event) => {
                 .set({ lastResponseId: responseId })
                 .where(eq(tables.chats.id, id as string))
             }
+          }
+
+          // Wait for title generation to complete if it's running
+          if (titlePromise) {
+            await titlePromise
           }
 
           controller.close()
