@@ -18,8 +18,8 @@ const { model } = useLLM()
 const refreshChats = inject<() => Promise<void>>('refreshChats')
 
 // Only use Datadog on client side
-const { trackMessageSent } = process.client 
-  ? useDatadog() 
+const { trackMessageSent } = import.meta.client
+  ? useDatadog()
   : { trackMessageSent: () => {} }
 
 const { data: chat } = await useFetch(`/api/chats/${route.params.id}`, {
@@ -29,6 +29,61 @@ const { data: chat } = await useFetch(`/api/chats/${route.params.id}`, {
 if (!chat.value) {
   throw createError({ statusCode: 404, statusMessage: 'Chat not found', fatal: true })
 }
+
+// Title polling state
+const titlePollingInterval = ref<NodeJS.Timeout | null>(null)
+
+// Function to poll for title updates
+async function pollForTitle() {
+  // Only poll if there's no title yet
+  if (!chat.value || chat.value.title) {
+    return
+  }
+
+  let pollCount = 0
+  const maxPolls = 30 // 30 * 2 seconds = 1 minute max
+
+  titlePollingInterval.value = setInterval(async () => {
+    pollCount++
+
+    try {
+      const updatedChat = await $fetch(`/api/chats/${route.params.id}`)
+
+      if (updatedChat?.title) {
+        // Title found! Update local state and stop polling
+        if (chat.value) {
+          chat.value.title = updatedChat.title
+        }
+
+        // Refresh the sidebar
+        if (refreshChats) {
+          await refreshChats()
+        }
+
+        // Stop polling
+        if (titlePollingInterval.value) {
+          clearInterval(titlePollingInterval.value)
+          titlePollingInterval.value = null
+        }
+      }
+    } catch (e) {
+      console.error('Error polling for title:', e)
+    }
+
+    // Stop polling after max attempts
+    if (pollCount >= maxPolls && titlePollingInterval.value) {
+      clearInterval(titlePollingInterval.value)
+      titlePollingInterval.value = null
+    }
+  }, 2000) // Poll every 2 seconds
+}
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (titlePollingInterval.value) {
+    clearInterval(titlePollingInterval.value)
+  }
+})
 
 const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
   id: chat.value.id,
@@ -41,15 +96,10 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
   body: {
     model: model.value
   },
-  onResponse(response) {
-    const title = response.headers.get('X-Chat-Title')
-    if (title && chat.value) {
-      // Update the current chat object
-      chat.value.title = title
-      // Use the injected refresh function
-      if (refreshChats) {
-        refreshChats()
-      }
+  onResponse(_response) {
+    // Start polling for title if this is the first message
+    if (!chat.value?.title && messages.value.length <= 2) {
+      pollForTitle()
     }
   },
   onError(error) {
@@ -88,6 +138,10 @@ function copy(e: MouseEvent, message: Message) {
 onMounted(() => {
   if (chat.value?.messages.length === 1) {
     reload()
+    // Also start polling for title if there isn't one
+    if (!chat.value.title) {
+      pollForTitle()
+    }
   }
 })
 </script>

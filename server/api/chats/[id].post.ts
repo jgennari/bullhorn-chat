@@ -58,10 +58,10 @@ export default defineEventHandler(async (event) => {
     // Get the latest message
     const lastMessage = messages[messages.length - 1]
 
-    // Start title generation promise if needed
-    let titlePromise: Promise<void> | null = null
+    // Fire-and-forget title generation
     if (!chat.title) {
-      titlePromise = (async () => {
+      // No await - runs in background
+      (async () => {
         try {
           const titleResponse = await openai.chat.completions.create({
             model: 'gpt-3.5-turbo',
@@ -75,12 +75,12 @@ export default defineEventHandler(async (event) => {
 
           // Clean the title and save to database
           const cleanedTitle = title.replace(/:/g, '').split('\n')[0]
-          setHeader(event, 'X-Chat-Title', cleanedTitle)
           await db.update(tables.chats).set({ title: cleanedTitle }).where(eq(tables.chats.id, id as string))
+          console.log(`Title generated for chat ${id}: ${cleanedTitle}`)
         } catch (e) {
           console.log('Error generating title:', e)
         }
-      })()
+      })().catch(e => console.error('Background title generation error:', e))
     }
 
     // Save user message if it's new
@@ -202,11 +202,6 @@ export default defineEventHandler(async (event) => {
                 .set({ lastResponseId: responseId })
                 .where(eq(tables.chats.id, id as string))
             }
-          }
-
-          // Wait for title generation to complete if it's running
-          if (titlePromise) {
-            await titlePromise
           }
 
           controller.close()
