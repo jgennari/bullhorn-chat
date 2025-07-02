@@ -150,7 +150,7 @@ export default defineEventHandler(async (event) => {
         Core Entities
         -------------
 
-        **Candidate** - Represents job seekers. Contains personal information and many associated records (education, work history, skills, etc.). 
+        **Candidate** - Represents job seekers. Contains personal information and many associated records (education, work history, skills, etc.) Resumes are stored in \`description\` field in an HTML format. 
         **ClientContact** - Contact person at a client corporation. Linked to ClientCorporation via \`clientCorporation\` (to-one). Other associations include owner (recruiter) and related notes/activities.
         **ClientCorporation** - Client companies we fill jobs for. Contains company information and associations to contacts, jobs, opportunities, etc.
         **JobOrder** - Job opening/requisition. Contains job details, requirements, and associations to candidates, client contacts, and placements.
