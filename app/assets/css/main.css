@@ -20,3 +20,9 @@
 :root {
   --ui-container: var(--container-4xl);
 }
+
+/* Add spacing between paragraphs in chat messages */
+[data-role="assistant"] p + p,
+[data-role="user"] p + p {
+  margin-top: 1rem;
+}
