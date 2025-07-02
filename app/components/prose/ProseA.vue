@@ -1,5 +1,5 @@
 <template>
-  <a :href="href" target="_blank" rel="noopener noreferrer" v-bind="$attrs">
+  <a :href="href" target="_blank" rel="noopener noreferrer" class="text-primary underline" v-bind="$attrs">
     <slot />
   </a>
 </template>
