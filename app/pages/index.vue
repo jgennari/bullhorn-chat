@@ -35,24 +35,20 @@ const quickChats = [
     icon: 'i-lucide-help-circle'
   },
   {
-    label: 'Summarize my open tasks in a table.',
+    label: 'List my open tasks.',
     icon: 'i-lucide-clipboard-list'
   },
   {
-    label: 'Show me open jobs that don’t have any submissions yet.',
+    label: 'Find jobs that don’t have any submissions yet.',
     icon: 'i-lucide-inbox'
   },
   {
-    label: 'Which jobs have been open the longest?',
+    label: 'Show me the oldest open jobs.',
     icon: 'i-lucide-clock'
   },
   {
-    label: 'What client meetings do I have this week?',
-    icon: 'i-lucide-calendar-days'
-  },
-  {
-    label: 'Find me candidates submitted in the last 7 days.',
-    icon: 'i-lucide-user-check'
+    label: 'Improve a job description.',
+    icon: 'i-lucide-file-text'
   }
 ]
 </script>
