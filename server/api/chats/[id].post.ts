@@ -138,6 +138,7 @@ export default defineEventHandler(async (event) => {
 
     const encoder = new TextEncoder()
     let fullText = ''
+    let lastChunkEndedWithSpace = true // Track if last chunk ended with whitespace
 
     // Create a stream that converts OpenAI's format to Vercel AI SDK format
     const stream = new ReadableStream({
@@ -146,7 +147,17 @@ export default defineEventHandler(async (event) => {
           // Handle streaming events
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           runner.on('response.output_text.delta', (diff: any) => {
-            const content = diff.delta
+            let content = diff.delta
+            
+            // If the last chunk didn't end with whitespace and this chunk doesn't start with whitespace,
+            // add a space to prevent words from running together
+            if (!lastChunkEndedWithSpace && content.length > 0 && !/^\s/.test(content)) {
+              content = ' ' + content
+            }
+            
+            // Track if this chunk ends with whitespace for the next iteration
+            lastChunkEndedWithSpace = content.length > 0 && /\s$/.test(content)
+            
             fullText += content
             // Send in Vercel AI SDK format
             controller.enqueue(encoder.encode(`0:"${content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"\n`))
