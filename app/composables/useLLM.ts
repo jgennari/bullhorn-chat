@@ -5,7 +5,7 @@ export function useLLM() {
     'gpt-4o',
     'gpt-4o-mini',
   ]
-  const model = useCookie<string>('llm-model', { default: () => 'gpt-4.1-mini' })
+  const model = useCookie<string>('llm-model', { default: () => 'gpt-4.1' })
 
   return {
     models,
