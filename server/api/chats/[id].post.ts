@@ -138,15 +138,43 @@ export default defineEventHandler(async (event) => {
 
     const encoder = new TextEncoder()
     let fullText = ''
+    let isFirstChunk = true
+    let hasSeenContent = false
 
     // Create a stream that converts OpenAI's format to Vercel AI SDK format
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Log all events for debugging
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          runner.on('*', (eventName: string, data: any) => {
+            console.log(`[OpenAI Event] ${eventName}:`, JSON.stringify(data, null, 2))
+          })
+
+          // Handle content part added events to detect when LLM resumes after pausing
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          runner.on('response.content_part.added', (part: any) => {
+            console.log('[Content Part Added]', { hasSeenContent, part })
+            // If we've already seen content and a new part is added, 
+            // this likely means the LLM paused and is resuming
+            if (hasSeenContent) {
+              // Add a double newline for a paragraph break
+              const paragraphBreak = '\n\n'
+              fullText += paragraphBreak
+              controller.enqueue(encoder.encode(`0:"${paragraphBreak.replace(/\n/g, '\\n')}"\n`))
+            }
+          })
+
           // Handle streaming events
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           runner.on('response.output_text.delta', (diff: any) => {
             const content = diff.delta
+            
+            // Mark that we've seen content
+            if (content.length > 0) {
+              hasSeenContent = true
+              isFirstChunk = false
+            }
             
             fullText += content
             // Send in Vercel AI SDK format
