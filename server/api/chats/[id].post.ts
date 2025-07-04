@@ -151,63 +151,59 @@ export default defineEventHandler(async (event) => {
             console.log(`[OpenAI Event] ${eventName}:`, JSON.stringify(data, null, 2))
           })
 
-          // MCP Tool Call Event Hooks
-          // Based on OpenAI Responses API documentation:
-          // 1. mcp_list_tools - Fired when tool list is imported from MCP server
-          // 2. mcp_tool_call - Fired when an MCP tool is being called
-          // 3. mcp_approval_requested - Fired when approval is needed for a tool call
-          // 4. tool_called - Generic tool call event
-          // 5. tool_output - Fired when a tool returns output
+          /* 
+           * MCP Tool Event Flow:
+           * 1. mcp_list_tools - Imports available tools from MCP server
+           * 2. mcp_tool_call - Initiates a tool call
+           * 3. mcp_approval_requested - (if require_approval is set) Requests approval
+           * 4. tool_called - Generic tool invocation event
+           * 5. tool_output - Tool returns its result
+           */
 
-          // Listen for MCP tool list import
+          // MCP-specific events
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           runner.on('mcp_list_tools', (data: any) => {
-            console.log('[MCP Tool List Import]', {
+            console.log('[MCP] List Tools Event:', {
               timestamp: new Date().toISOString(),
-              tools: data?.tools || [],
-              count: data?.tools?.length || 0,
-              fullData: JSON.stringify(data, null, 2)
+              data: JSON.stringify(data, null, 2)
             })
           })
 
-          // Listen for MCP tool calls
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           runner.on('mcp_tool_call', (data: any) => {
-            console.log('[MCP Tool Call]', {
+            console.log('[MCP] Tool Call Event:', {
               timestamp: new Date().toISOString(),
-              toolName: data?.tool_name || 'unknown',
-              toolId: data?.id || 'no-id',
-              arguments: data?.arguments || {},
-              fullData: JSON.stringify(data, null, 2)
+              toolName: data?.tool_name,
+              data: JSON.stringify(data, null, 2)
             })
           })
 
-          // Listen for MCP approval requests
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           runner.on('mcp_approval_requested', (data: any) => {
-            console.log('[MCP Approval Requested]', {
+            console.log('[MCP] Approval Requested:', {
               timestamp: new Date().toISOString(),
-              approvalRequestId: data?.approval_request_id || 'no-id',
-              toolName: data?.tool_name || 'unknown',
-              serverLabel: data?.server_label || 'unknown',
-              fullData: JSON.stringify(data, null, 2)
+              toolName: data?.tool_name,
+              data: JSON.stringify(data, null, 2)
             })
           })
 
-          // Listen for generic tool calls (may include non-MCP tools)
+          // Generic tool events
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           runner.on('tool_called', (data: any) => {
-            console.log('[Tool Called]', {
+            console.log('[Tool] Called:', {
               timestamp: new Date().toISOString(),
-              toolType: data?.type || 'unknown',
-              toolName: data?.name || 'unknown',
-              fullData: JSON.stringify(data, null, 2)
+              toolName: data?.name || data?.tool_name,
+              data: JSON.stringify(data, null, 2)
             })
           })
 
-          // Listen for tool outputs
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           runner.on('tool_output', (data: any) => {
-            console.log('[Tool Output]', {
+            console.log('[Tool] Output:', {
               timestamp: new Date().toISOString(),
-              toolName: data?.tool_name || 'unknown',
-              outputLength: JSON.stringify(data?.output || '').length,
-              fullData: JSON.stringify(data, null, 2)
+              toolName: data?.name || data?.tool_name,
+              output: data?.output,
+              data: JSON.stringify(data, null, 2)
             })
           })
 
