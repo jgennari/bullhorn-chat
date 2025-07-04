@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
       (async () => {
         try {
           const titleResponse = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-4o',
             messages: [{
               role: 'system',
               content: `Generate a short title (max 30 chars) for a chat that starts with: "${lastMessage.content}". No quotes or punctuation. Keep it professional and concise.`
