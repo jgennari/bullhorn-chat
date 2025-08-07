@@ -2,13 +2,14 @@ import { feedback } from '../../../database/schema'
 import { eq, and } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event)
-  if (!session?.user?.id) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized'
-    })
-  }
+  try {
+    const session = await getUserSession(event)
+    if (!session?.user?.id) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
 
   const { id: messageId } = getRouterParams(event)
 
@@ -24,4 +25,9 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   return userFeedback[0] || null
+  } catch (error) {
+    console.error('[Feedback GET API] Error:', error)
+    // Don't throw for GET requests, just return null
+    return null
+  }
 })
