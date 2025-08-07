@@ -268,32 +268,14 @@ export default defineEventHandler(async (event) => {
             
             fullText += content
             
-            // Check if controller is ready for more data (backpressure handling)
-            if (controller.desiredSize !== null && controller.desiredSize <= 0) {
-              console.log('[Stream] Backpressure detected, pausing...')
-              // Wait a bit before continuing
-              setTimeout(() => {
-                if (!isStreamClosed) {
-                  // Send in Vercel AI SDK format with proper escaping
-                  const escaped = JSON.stringify(content)
-                  const chunk = `0:${escaped}\n`
-                  try {
-                    controller.enqueue(encoder.encode(chunk))
-                  } catch (e) {
-                    console.error('[Stream] Failed to enqueue:', e)
-                  }
-                }
-              }, 10)
-            } else {
-              // Send in Vercel AI SDK format with proper escaping
-              const escaped = JSON.stringify(content)
-              const chunk = `0:${escaped}\n`
-              try {
-                controller.enqueue(encoder.encode(chunk))
-              } catch (e) {
-                console.error('[Stream] Failed to enqueue:', e)
-                closeStream()
-              }
+            // Send in Vercel AI SDK format with proper escaping
+            const escaped = JSON.stringify(content)
+            const chunk = `0:${escaped}\n`
+            try {
+              controller.enqueue(encoder.encode(chunk))
+            } catch (e) {
+              console.error('[Stream] Failed to enqueue:', e)
+              closeStream()
             }
           })
 
