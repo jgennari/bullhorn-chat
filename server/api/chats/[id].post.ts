@@ -36,9 +36,11 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 500, statusMessage: 'OpenAI API key not configured' })
     }
 
-    // Create OpenAI instance
+    // Create OpenAI instance with timeout configuration
     const openai = new OpenAI({
-      apiKey: apiKey
+      apiKey: apiKey,
+      timeout: 300000, // 5 minutes timeout (default is 10 minutes, but let's be explicit)
+      maxRetries: 2 // Retry up to 2 times on timeout or transient errors
     })
 
     const chat = await db.query.chats.findFirst({
@@ -304,10 +306,24 @@ export default defineEventHandler(async (event) => {
             }
           }
 
+          // Send an explicit end-of-stream marker before closing
+          controller.enqueue(encoder.encode(`d:{"finishReason":"stop"}\n`))
+          
+          // Add a small delay to ensure all data is flushed before closing
+          await new Promise(resolve => setTimeout(resolve, 100))
+          
           controller.close()
-        } catch (error) {
+        } catch (error: any) {
           console.error('Streaming error:', error)
-          controller.error(error)
+          
+          // Handle timeout errors specifically
+          if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT' || error?.code === 'ECONNABORTED') {
+            console.error('OpenAI request timed out. The service may be slow.')
+            const timeoutError = new Error('OpenAI is taking longer than expected. Please try again.')
+            controller.error(timeoutError)
+          } else {
+            controller.error(error)
+          }
         }
       }
     })
@@ -318,8 +334,17 @@ export default defineEventHandler(async (event) => {
         'X-Vercel-AI-Data-Stream': 'v1'
       }
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Chat API Error:', error)
+    
+    // Check for timeout errors
+    if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT' || error?.code === 'ECONNABORTED') {
+      throw createError({
+        statusCode: 504,
+        statusMessage: 'OpenAI request timed out. The service may be experiencing high load. Please try again.'
+      })
+    }
+    
     throw createError({
       statusCode: 500,
       statusMessage: error instanceof Error ? error.message : 'An error occurred processing your request'

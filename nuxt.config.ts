@@ -34,6 +34,13 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       openAPI: true
+    },
+    routeRules: {
+      '/api/chats/**': {
+        // Increase timeout for chat endpoints (5 minutes)
+        // Note: This may be limited by your hosting provider
+        cors: true
+      }
     }
   },
 

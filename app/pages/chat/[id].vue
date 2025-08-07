@@ -133,6 +133,7 @@ const copied = ref(false)
 const feedbackModalOpen = ref(false)
 const feedbackMessageId = ref<string>('')
 const messageFeedback = ref<Record<string, 'positive' | 'negative' | null>>({})
+const feedbackLoaded = ref<Set<string>>(new Set()) // Track which messages have been checked
 
 function copy(e: MouseEvent, message: Message) {
   clipboard.copy(message.content)
@@ -193,7 +194,10 @@ function onFeedbackModalSubmit(comment: string) {
 // Load existing feedback for messages
 async function loadFeedback() {
   for (const message of messages.value) {
-    if (message.role === 'assistant') {
+    // Only load feedback for assistant messages we haven't checked yet
+    if (message.role === 'assistant' && !feedbackLoaded.value.has(message.id)) {
+      feedbackLoaded.value.add(message.id) // Mark as checked
+      
       try {
         const feedback = await $fetch(`/api/messages/${message.id}/feedback`)
         if (feedback) {
@@ -201,6 +205,7 @@ async function loadFeedback() {
         }
       } catch (error) {
         // Ignore errors for missing feedback
+        // Message has been checked, so we won't retry
       }
     }
   }
@@ -235,12 +240,7 @@ onMounted(() => {
       pollForTitle()
     }
   }
-  // Load existing feedback
-  loadFeedback()
-})
-
-// Reload feedback when messages change
-watch(messages, () => {
+  // Load existing feedback once on mount
   loadFeedback()
 })
 </script>
