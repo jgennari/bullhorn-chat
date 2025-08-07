@@ -2,7 +2,6 @@
 const input = ref('')
 const loading = ref(false)
 
-const { model } = useLLM()
 const { loggedIn } = useUserSession()
 
 async function createChat(prompt: string) {
@@ -76,7 +75,9 @@ const quickChats = [
           <UChatPromptSubmit color="neutral" />
 
           <template #footer>
-            <ModelSelect v-model="model" />
+            <div class="flex items-center gap-2">
+              <ToolsMenu />
+            </div>
           </template>
         </UChatPrompt>
 

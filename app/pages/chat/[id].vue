@@ -14,7 +14,6 @@ const components = {
 const route = useRoute()
 const toast = useToast()
 const clipboard = useClipboard()
-const { model } = useLLM()
 const refreshChats = inject<() => Promise<void>>('refreshChats')
 
 // Only use Datadog on client side
@@ -103,9 +102,6 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
     content: message.content,
     role: message.role
   })),
-  body: {
-    model: model.value
-  },
   onResponse(_response) {
     // Start polling for title if this is the first message
     if (!chat.value?.title && messages.value.length <= 2) {
@@ -134,6 +130,9 @@ const handleSubmitWithTracking = (e?: Event) => {
 }
 
 const copied = ref(false)
+const feedbackModalOpen = ref(false)
+const feedbackMessageId = ref<string>('')
+const messageFeedback = ref<Record<string, 'positive' | 'negative' | null>>({})
 
 function copy(e: MouseEvent, message: Message) {
   clipboard.copy(message.content)
@@ -145,6 +144,89 @@ function copy(e: MouseEvent, message: Message) {
   }, 2000)
 }
 
+async function handleThumbsUp(e: MouseEvent, message: Message) {
+  await submitFeedback(message.id, 'positive')
+}
+
+async function handleThumbsDown(e: MouseEvent, message: Message) {
+  // Show modal for comment
+  feedbackMessageId.value = message.id
+  // Use nextTick to ensure proper modal rendering
+  await nextTick()
+  feedbackModalOpen.value = true
+}
+
+async function submitFeedback(messageId: string, rating: 'positive' | 'negative', comment?: string) {
+  try {
+    await $fetch(`/api/messages/${messageId}/feedback`, {
+      method: 'POST',
+      body: { rating, comment }
+    })
+    messageFeedback.value[messageId] = rating
+    toast.add({
+      title: 'Feedback submitted',
+      description: 'Thank you for your feedback!',
+      icon: 'i-lucide-check-circle',
+      color: 'success'
+    })
+  } catch (error) {
+    console.error('Failed to submit feedback:', error)
+    toast.add({
+      title: 'Failed to submit feedback',
+      icon: 'i-lucide-alert-circle',
+      color: 'error'
+    })
+  }
+}
+
+function onFeedbackModalSubmit(comment: string) {
+  // The modal handles submission itself, just update our local state
+  messageFeedback.value[feedbackMessageId.value] = 'negative'
+  toast.add({
+    title: 'Feedback submitted',
+    description: 'Thank you for your feedback!',
+    icon: 'i-lucide-check-circle',
+    color: 'success'
+  })
+}
+
+// Load existing feedback for messages
+async function loadFeedback() {
+  for (const message of messages.value) {
+    if (message.role === 'assistant') {
+      try {
+        const feedback = await $fetch(`/api/messages/${message.id}/feedback`)
+        if (feedback) {
+          messageFeedback.value[message.id] = feedback.rating
+        }
+      } catch (error) {
+        // Ignore errors for missing feedback
+      }
+    }
+  }
+}
+
+// Get assistant actions
+const assistantActions = computed(() => {
+  return [
+    { 
+      label: 'Copy', 
+      icon: copied.value ? 'i-lucide-copy-check' : 'i-lucide-copy', 
+      onClick: copy 
+    },
+    {
+      label: 'Good response',
+      icon: 'i-lucide-thumbs-up',
+      onClick: handleThumbsUp
+    },
+    {
+      label: 'Bad response', 
+      icon: 'i-lucide-thumbs-down',
+      onClick: handleThumbsDown
+    }
+  ]
+})
+
 onMounted(() => {
   if (chat.value?.messages.length === 1) {
     reload()
@@ -153,6 +235,13 @@ onMounted(() => {
       pollForTitle()
     }
   }
+  // Load existing feedback
+  loadFeedback()
+})
+
+// Reload feedback when messages change
+watch(messages, () => {
+  loadFeedback()
 })
 </script>
 
@@ -167,7 +256,9 @@ onMounted(() => {
         <UChatMessages
           :messages="messages"
           :status="status"
-          :assistant="{ actions: [{ label: 'Copy', icon: copied ? 'i-lucide-copy-check' : 'i-lucide-copy', onClick: copy }] }"
+          :assistant="{ 
+            actions: assistantActions
+          }"
           class="lg:pt-(--ui-header-height) pb-4 sm:pb-6"
           :spacing-offset="160"
         >
@@ -196,10 +287,24 @@ onMounted(() => {
           />
 
           <template #footer>
-            <ModelSelect v-model="model" />
+            <div class="flex items-center gap-2">
+              <ToolsMenu />
+            </div>
           </template>
         </UChatPrompt>
       </UContainer>
     </template>
   </UDashboardPanel>
+  
+  <!-- Feedback Modal -->
+  <ClientOnly>
+    <Teleport to="body">
+      <ModalFeedback
+        v-if="feedbackModalOpen"
+        v-model="feedbackModalOpen"
+        :message-id="feedbackMessageId"
+        @submit="onFeedbackModalSubmit"
+      />
+    </Teleport>
+  </ClientOnly>
 </template>

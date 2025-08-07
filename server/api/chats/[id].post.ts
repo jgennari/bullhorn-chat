@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     console.log(`[API] Processing request for chat ID: ${id}`)
     
     const body = await readBody(event)
-    const { model, messages: rawMessages } = body
+    const { messages: rawMessages } = body
 
     // Transform messages to the format expected by the AI SDK
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -125,16 +125,32 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    if (!process.env.NUXT_OPENAI_PROMPT_ID) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'OpenAI prompt ID not configured. Please set NUXT_OPENAI_PROMPT_ID environment variable.'
+      })
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const runner = (openai as any).responses.stream({
-      model: model || 'gpt-4.1',
       input: lastMessage.content,
-        prompt: {
-        "id": "pmpt_68650b0f9c208194aefe5d11b912ecfb03d932dccc73bd13"
+      prompt: {
+        "id": process.env.NUXT_OPENAI_PROMPT_ID
       },
       tools: tools,
-      previous_response_id: chat.lastResponseId || undefined
-    })
+      previous_response_id: chat.lastResponseId || undefined,
+      text: {
+        "format": {
+          "type": "text"
+        },
+        "verbosity": "medium"
+      },
+      reasoning: {
+        "summary": "auto"
+      },
+      store: true    
+    });
 
     const encoder = new TextEncoder()
     let fullText = ''

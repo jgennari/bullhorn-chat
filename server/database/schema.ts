@@ -48,9 +48,34 @@ export const messages = sqliteTable('messages', {
   index('chatIdIdx').on(t.chatId)
 ])
 
-export const messagesRelations = relations(messages, ({ one }) => ({
+export const messagesRelations = relations(messages, ({ one, many }) => ({
   chat: one(chats, {
     fields: [messages.chatId],
     references: [chats.id]
+  }),
+  feedback: many(feedback)
+}))
+
+export const feedback = sqliteTable('feedback', {
+  id: text().primaryKey().$defaultFn(() => randomUUID()),
+  messageId: text().notNull().references(() => messages.id, { onDelete: 'cascade' }),
+  userId: text().notNull().references(() => users.id, { onDelete: 'cascade' }),
+  rating: text({ enum: ['positive', 'negative'] }).notNull(),
+  comment: text(),
+  createdAt: integer({ mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, t => [
+  index('messageIdIdx').on(t.messageId),
+  index('userIdIdx').on(t.userId),
+  unique().on(t.messageId, t.userId)
+])
+
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+  message: one(messages, {
+    fields: [feedback.messageId],
+    references: [messages.id]
+  }),
+  user: one(users, {
+    fields: [feedback.userId],
+    references: [users.id]
   })
 }))
