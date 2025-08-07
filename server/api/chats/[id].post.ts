@@ -141,15 +141,13 @@ export default defineEventHandler(async (event) => {
         "id": process.env.NUXT_OPENAI_PROMPT_ID
       },
       tools: tools,
+      max_output_tokens: 32000,
       previous_response_id: chat.lastResponseId || undefined,
       text: {
         "format": {
           "type": "text"
         },
-        "verbosity": "medium"
-      },
-      reasoning: {
-        "summary": "auto"
+        "verbosity": "low"
       },
       store: true    
     });
@@ -235,8 +233,8 @@ export default defineEventHandler(async (event) => {
               // Add a double newline for a paragraph break
               const paragraphBreak = '\n\n'
               fullText += paragraphBreak
-              const escapedBreak = JSON.stringify(paragraphBreak).slice(1, -1)
-              controller.enqueue(encoder.encode(`0:"${escapedBreak}"\n`))
+              const escapedBreak = JSON.stringify(paragraphBreak)
+              controller.enqueue(encoder.encode(`0:${escapedBreak}\n`))
             }
           })
 
@@ -252,10 +250,12 @@ export default defineEventHandler(async (event) => {
             }
             
             fullText += content
-            // Send in Vercel AI SDK format
-            // Properly escape the content for JSON string
-            const escaped = JSON.stringify(content).slice(1, -1) // Remove outer quotes from JSON.stringify
-            controller.enqueue(encoder.encode(`0:"${escaped}"\n`))
+            // Send in Vercel AI SDK format with proper escaping
+            // Use JSON.stringify to handle all special characters correctly
+            const escaped = JSON.stringify(content)
+            // Remove the outer quotes and send
+            const chunk = `0:${escaped}\n`
+            controller.enqueue(encoder.encode(chunk))
           })
 
           // Listen for response.done event to get the ID
