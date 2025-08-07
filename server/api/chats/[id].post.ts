@@ -235,7 +235,8 @@ export default defineEventHandler(async (event) => {
               // Add a double newline for a paragraph break
               const paragraphBreak = '\n\n'
               fullText += paragraphBreak
-              controller.enqueue(encoder.encode(`0:"${paragraphBreak.replace(/\n/g, '\\n')}"\n`))
+              const escapedBreak = JSON.stringify(paragraphBreak).slice(1, -1)
+              controller.enqueue(encoder.encode(`0:"${escapedBreak}"\n`))
             }
           })
 
@@ -252,7 +253,9 @@ export default defineEventHandler(async (event) => {
             
             fullText += content
             // Send in Vercel AI SDK format
-            controller.enqueue(encoder.encode(`0:"${content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"\n`))
+            // Properly escape the content for JSON string
+            const escaped = JSON.stringify(content).slice(1, -1) // Remove outer quotes from JSON.stringify
+            controller.enqueue(encoder.encode(`0:"${escaped}"\n`))
           })
 
           // Listen for response.done event to get the ID
