@@ -10,8 +10,7 @@ const isOpen = ref(false)
       label="Tools"
       trailing-icon="i-lucide-chevron-down"
       variant="ghost"
-      color="white"
-      class="hover:bg-white/10 focus:bg-white/10 data-[state=open]:bg-white/10 text-white"
+      class="hover:bg-gray-100 dark:hover:bg-white/10 focus:bg-gray-100 dark:focus:bg-white/10 data-[state=open]:bg-gray-100 dark:data-[state=open]:bg-white/10 text-gray-700 dark:text-white"
       :ui="{
         trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
       }"

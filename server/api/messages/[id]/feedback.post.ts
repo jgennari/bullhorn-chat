@@ -2,24 +2,27 @@ import { feedback } from '../../../database/schema'
 import { eq, and } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event)
-  if (!session?.user?.id) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized'
-    })
-  }
+  try {
+    const session = await getUserSession(event)
+    if (!session?.user?.id) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
 
-  const { id: messageId } = getRouterParams(event)
-  const body = await readBody(event)
-  const { rating, comment } = body
+    const { id: messageId } = getRouterParams(event)
+    const body = await readBody(event)
+    const { rating, comment } = body
 
-  if (!rating || !['positive', 'negative'].includes(rating)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid rating. Must be "positive" or "negative"'
-    })
-  }
+    if (!rating || !['positive', 'negative'].includes(rating)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid rating. Must be "positive" or "negative"'
+      })
+    }
+
+    console.log('[Feedback API] Processing feedback:', { messageId, userId: session.user.id, rating })
 
   // Check if feedback already exists for this user and message
   const existingFeedback = await useDrizzle().select()
@@ -56,5 +59,12 @@ export default defineEventHandler(async (event) => {
       .returning()
 
     return created
+  }
+  } catch (error) {
+    console.error('[Feedback API] Error:', error)
+    throw createError({
+      statusCode: 500,
+      statusMessage: `Failed to save feedback: ${error.message}`
+    })
   }
 })
