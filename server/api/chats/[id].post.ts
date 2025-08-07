@@ -160,6 +160,21 @@ export default defineEventHandler(async (event) => {
     // Create a stream that converts OpenAI's format to Vercel AI SDK format
     const stream = new ReadableStream({
       async start(controller) {
+        let isStreamClosed = false
+        
+        // Handle stream closure gracefully
+        const closeStream = () => {
+          if (!isStreamClosed) {
+            isStreamClosed = true
+            try {
+              controller.close()
+            } catch (e) {
+              // Stream already closed, ignore
+              console.log('Stream already closed:', e.message)
+            }
+          }
+        }
+        
         try {
           // Log all events for debugging
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -241,6 +256,8 @@ export default defineEventHandler(async (event) => {
           // Handle streaming events
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           runner.on('response.output_text.delta', (diff: any) => {
+            if (isStreamClosed) return // Don't write to closed stream
+            
             const content = diff.delta
             
             // Mark that we've seen content
@@ -250,12 +267,34 @@ export default defineEventHandler(async (event) => {
             }
             
             fullText += content
-            // Send in Vercel AI SDK format with proper escaping
-            // Use JSON.stringify to handle all special characters correctly
-            const escaped = JSON.stringify(content)
-            // Remove the outer quotes and send
-            const chunk = `0:${escaped}\n`
-            controller.enqueue(encoder.encode(chunk))
+            
+            // Check if controller is ready for more data (backpressure handling)
+            if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+              console.log('[Stream] Backpressure detected, pausing...')
+              // Wait a bit before continuing
+              setTimeout(() => {
+                if (!isStreamClosed) {
+                  // Send in Vercel AI SDK format with proper escaping
+                  const escaped = JSON.stringify(content)
+                  const chunk = `0:${escaped}\n`
+                  try {
+                    controller.enqueue(encoder.encode(chunk))
+                  } catch (e) {
+                    console.error('[Stream] Failed to enqueue:', e)
+                  }
+                }
+              }, 10)
+            } else {
+              // Send in Vercel AI SDK format with proper escaping
+              const escaped = JSON.stringify(content)
+              const chunk = `0:${escaped}\n`
+              try {
+                controller.enqueue(encoder.encode(chunk))
+              } catch (e) {
+                console.error('[Stream] Failed to enqueue:', e)
+                closeStream()
+              }
+            }
           })
 
           // Listen for response.done event to get the ID
@@ -310,12 +349,16 @@ export default defineEventHandler(async (event) => {
           }
 
           // Send an explicit end-of-stream marker before closing
-          controller.enqueue(encoder.encode(`d:{"finishReason":"stop"}\n`))
-          
-          // Add a small delay to ensure all data is flushed before closing
-          await new Promise(resolve => setTimeout(resolve, 100))
-          
-          controller.close()
+          if (!isStreamClosed) {
+            try {
+              controller.enqueue(encoder.encode(`d:{"finishReason":"stop"}\n`))
+            } catch (e) {
+              console.log('[Stream] Failed to send end marker:', e)
+            }
+            
+            // Close the stream
+            closeStream()
+          }
         } catch (error: any) {
           console.error('Streaming error:', error)
           
@@ -334,7 +377,13 @@ export default defineEventHandler(async (event) => {
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'X-Vercel-AI-Data-Stream': 'v1'
+        'X-Vercel-AI-Data-Stream': 'v1',
+        // HTTP/2 and streaming optimizations
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Content-Type-Options': 'nosniff',
+        'Connection': 'keep-alive',
+        'Transfer-Encoding': 'chunked',
+        'X-Accel-Buffering': 'no' // Disable proxy buffering for better streaming
       }
     })
   } catch (error: any) {
