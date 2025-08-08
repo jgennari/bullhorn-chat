@@ -166,6 +166,7 @@ export default defineEventHandler(async (event) => {
         const closeStream = () => {
           if (!isStreamClosed) {
             isStreamClosed = true
+            console.log(`[Stream] Closing stream. Total text length: ${fullText.length}`)
             try {
               controller.close()
             } catch (e) {
@@ -267,6 +268,7 @@ export default defineEventHandler(async (event) => {
             }
             
             fullText += content
+            console.log(`[Stream Delta] Received ${content.length} chars, total so far: ${fullText.length}`)
             
             // Send in Vercel AI SDK format with proper escaping
             const escaped = JSON.stringify(content)
@@ -296,7 +298,13 @@ export default defineEventHandler(async (event) => {
           })
 
           // Wait for the stream to complete
+          console.log('[Stream] Waiting for finalResponse...')
           const finalResponse = await runner.finalResponse()
+          console.log('[Stream] Got finalResponse:', {
+            hasId: !!finalResponse?.id,
+            responseId: finalResponse?.id,
+            fullTextLength: fullText.length
+          })
 
           // Try to get response ID from finalResponse if not already set
           if (!responseId && finalResponse?.id) {
