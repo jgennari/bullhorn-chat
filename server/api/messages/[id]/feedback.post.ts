@@ -40,8 +40,7 @@ export default defineEventHandler(async (event) => {
     const [updated] = await useDrizzle().update(feedback)
       .set({
         rating,
-        comment: comment || null,
-        createdAt: new Date()
+        comment: comment && comment.trim() ? comment.trim() : null
       })
       .where(eq(feedback.id, existingFeedback[0].id))
       .returning()
@@ -54,17 +53,31 @@ export default defineEventHandler(async (event) => {
         messageId,
         userId: session.user.id,
         rating,
-        comment: comment || null
+        comment: comment && comment.trim() ? comment.trim() : null
       })
       .returning()
 
     return created
   }
-  } catch (error) {
-    console.error('[Feedback API] Error:', error)
+  } catch (error: any) {
+    console.error('[Feedback API] Error:', {
+      message: error.message,
+      cause: error.cause,
+      stack: error.stack,
+      messageId,
+      userId: session?.user?.id,
+      rating,
+      comment
+    })
+    
+    // If it's already an error with statusCode, re-throw it
+    if (error.statusCode) {
+      throw error
+    }
+    
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to save feedback: ${error.message}`
+      statusMessage: `Failed to save feedback: ${error.message || 'Unknown error'}`
     })
   }
 })
