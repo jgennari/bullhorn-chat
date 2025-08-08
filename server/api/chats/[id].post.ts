@@ -337,9 +337,21 @@ export default defineEventHandler(async (event) => {
             }
           }
 
-          // Send an explicit end-of-stream marker with metadata before closing
+          // Send response metadata as a data chunk, then the finish marker
           if (!isStreamClosed) {
             try {
+              // First send metadata as a separate data chunk
+              if (responseId) {
+                const metadata = {
+                  type: 'metadata',
+                  responseId: responseId,
+                  messageLength: fullText.length
+                }
+                console.log('[Stream] Sending metadata:', metadata)
+                controller.enqueue(encoder.encode(`8:${JSON.stringify(metadata)}\n`))
+              }
+              
+              // Then send the standard finish marker
               const finishData = {
                 finishReason: "stop",
                 responseId: responseId || null,

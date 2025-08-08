@@ -116,28 +116,27 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
       messageLength: message.content?.length || 0,
       role: message.role,
       finishReason: options?.finishReason,
-      usage: options?.usage
+      usage: options?.usage,
+      fullOptions: options
     })
     
-    // Check if we have response metadata
-    if (options?.finishReason) {
-      try {
-        // Try to parse if it's a JSON string
-        const metadata = typeof options.finishReason === 'string' && options.finishReason.startsWith('{') 
-          ? JSON.parse(options.finishReason) 
-          : { finishReason: options.finishReason }
-        
-        if (metadata.responseId) {
-          console.log('[Chat] Response ID:', metadata.responseId)
+    // Log all options to see what's available
+    console.log('[Chat] Full options object:', options)
+    
+    // Check if we have response metadata in any field
+    if (options) {
+      // Check various possible locations for responseId
+      const possibleResponseId = options.responseId || options.response_id || options.id
+      if (possibleResponseId) {
+        console.log('[Chat] Response ID found:', possibleResponseId)
+      }
+      
+      // Check for message length in options
+      if (options.messageLength !== undefined) {
+        console.log('[Chat] Server reported message length:', options.messageLength)
+        if (message.content?.length !== options.messageLength) {
+          console.warn('[Chat] Length mismatch! Client:', message.content?.length, 'Server:', options.messageLength)
         }
-        if (metadata.messageLength !== undefined) {
-          console.log('[Chat] Server reported message length:', metadata.messageLength)
-          if (message.content?.length !== metadata.messageLength) {
-            console.warn('[Chat] Length mismatch! Client:', message.content?.length, 'Server:', metadata.messageLength)
-          }
-        }
-      } catch (e) {
-        // Not JSON, just a regular finish reason
       }
     }
   },
