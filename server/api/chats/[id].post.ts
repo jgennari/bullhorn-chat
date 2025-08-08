@@ -283,6 +283,7 @@ export default defineEventHandler(async (event) => {
           runner.on('response.done', (response: any) => {
             if (response?.id) {
               responseId = response.id
+              console.log(`[Response] Captured response ID: ${responseId}`)
             }
           })
 
@@ -304,22 +305,28 @@ export default defineEventHandler(async (event) => {
 
           // Save the complete message and update the response ID
           if (fullText) {
+            console.log(`[Save] Attempting to save response for chat ${id}, length: ${fullText.length} chars`)
             try {
               await db.insert(tables.messages).values({
                 chatId: id as string,
                 role: 'assistant',
                 content: fullText
               })
+              console.log(`[Save] Successfully saved response for chat ${id}`)
             } catch (insertError) {
-              console.error(`Failed to insert assistant message for chat ${id}:`, insertError)
+              console.error(`[Save] Failed to insert assistant message for chat ${id}:`, insertError)
+              console.error(`[Save] Message length was: ${fullText.length} chars`)
               // Don't throw, just log the error to avoid breaking the stream
             }
 
             // Update the chat with the response ID for future conversations
             if (responseId) {
+              console.log(`[Save] Updating chat ${id} with response ID: ${responseId}`)
               await db.update(tables.chats)
                 .set({ lastResponseId: responseId })
                 .where(eq(tables.chats.id, id as string))
+            } else {
+              console.warn(`[Save] No response ID to save for chat ${id}`)
             }
           } else {
             // If no text was generated, still capture the response ID
@@ -330,10 +337,16 @@ export default defineEventHandler(async (event) => {
             }
           }
 
-          // Send an explicit end-of-stream marker before closing
+          // Send an explicit end-of-stream marker with metadata before closing
           if (!isStreamClosed) {
             try {
-              controller.enqueue(encoder.encode(`d:{"finishReason":"stop"}\n`))
+              const finishData = {
+                finishReason: "stop",
+                responseId: responseId || null,
+                messageLength: fullText.length
+              }
+              console.log('[Stream] Sending finish marker with:', finishData)
+              controller.enqueue(encoder.encode(`d:${JSON.stringify(finishData)}\n`))
             } catch (e) {
               console.log('[Stream] Failed to send end marker:', e)
             }

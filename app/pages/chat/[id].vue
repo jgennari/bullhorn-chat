@@ -102,14 +102,48 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
     content: message.content,
     role: message.role
   })),
-  onResponse(_response) {
+  onResponse(response) {
+    console.log('[Chat] Stream started, response headers:', response.headers)
     // Start polling for title if this is the first message
     if (!chat.value?.title && messages.value.length <= 2) {
       pollForTitle()
     }
   },
+  onFinish(message, options) {
+    // Log completion of streaming
+    console.log('[Chat] Stream finished:', {
+      messageId: message.id,
+      messageLength: message.content?.length || 0,
+      role: message.role,
+      finishReason: options?.finishReason,
+      usage: options?.usage
+    })
+    
+    // Check if we have response metadata
+    if (options?.finishReason) {
+      try {
+        // Try to parse if it's a JSON string
+        const metadata = typeof options.finishReason === 'string' && options.finishReason.startsWith('{') 
+          ? JSON.parse(options.finishReason) 
+          : { finishReason: options.finishReason }
+        
+        if (metadata.responseId) {
+          console.log('[Chat] Response ID:', metadata.responseId)
+        }
+        if (metadata.messageLength !== undefined) {
+          console.log('[Chat] Server reported message length:', metadata.messageLength)
+          if (message.content?.length !== metadata.messageLength) {
+            console.warn('[Chat] Length mismatch! Client:', message.content?.length, 'Server:', metadata.messageLength)
+          }
+        }
+      } catch (e) {
+        // Not JSON, just a regular finish reason
+      }
+    }
+  },
   onError(error) {
     const { message } = typeof error.message === 'string' && error.message[0] === '{' ? JSON.parse(error.message) : error
+    console.error('[Chat] Error:', message)
     toast.add({
       description: message,
       icon: 'i-lucide-alert-circle',
