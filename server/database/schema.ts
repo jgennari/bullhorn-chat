@@ -43,6 +43,7 @@ export const messages = sqliteTable('messages', {
   chatId: text().notNull().references(() => chats.id, { onDelete: 'cascade' }),
   role: text({ enum: ['user', 'assistant'] }).notNull(),
   content: text().notNull(),
+  responseId: text(),
   createdAt: integer({ mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, t => [
   index('chatIdIdx').on(t.chatId)

@@ -313,14 +313,15 @@ export default defineEventHandler(async (event) => {
 
           // Save the complete message and update the response ID
           if (fullText) {
-            console.log(`[Save] Attempting to save response for chat ${id}, length: ${fullText.length} chars`)
+            console.log(`[Save] Attempting to save response for chat ${id}, length: ${fullText.length} chars, responseId: ${responseId}`)
             try {
               await db.insert(tables.messages).values({
                 chatId: id as string,
                 role: 'assistant',
-                content: fullText
+                content: fullText,
+                responseId: responseId || null
               })
-              console.log(`[Save] Successfully saved response for chat ${id}`)
+              console.log(`[Save] Successfully saved response for chat ${id} with responseId: ${responseId}`)
             } catch (insertError) {
               console.error(`[Save] Failed to insert assistant message for chat ${id}:`, insertError)
               console.error(`[Save] Message length was: ${fullText.length} chars`)

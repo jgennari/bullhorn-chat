@@ -2,8 +2,13 @@ import { feedback } from '../../../database/schema'
 import { eq, and } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
+  let session: any
+  let messageId: string | undefined
+  let rating: string | undefined
+  let comment: string | undefined
+  
   try {
-    const session = await getUserSession(event)
+    session = await getUserSession(event)
     if (!session?.user?.id) {
       throw createError({
         statusCode: 401,
@@ -11,9 +16,12 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const { id: messageId } = getRouterParams(event)
+    const params = getRouterParams(event)
+    messageId = params.id
     const body = await readBody(event)
-    const { rating, comment } = body
+    rating = body.rating
+    // Normalize comment - treat empty strings as null
+    comment = body.comment && body.comment.trim() ? body.comment.trim() : null
 
     if (!rating || !['positive', 'negative'].includes(rating)) {
       throw createError({
@@ -40,7 +48,7 @@ export default defineEventHandler(async (event) => {
     const [updated] = await useDrizzle().update(feedback)
       .set({
         rating,
-        comment: comment && comment.trim() ? comment.trim() : null
+        comment
       })
       .where(eq(feedback.id, existingFeedback[0].id))
       .returning()
@@ -53,7 +61,7 @@ export default defineEventHandler(async (event) => {
         messageId,
         userId: session.user.id,
         rating,
-        comment: comment && comment.trim() ? comment.trim() : null
+        comment
       })
       .returning()
 
