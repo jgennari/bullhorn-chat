@@ -141,14 +141,8 @@ export default defineEventHandler(async (event) => {
         "id": process.env.NUXT_OPENAI_PROMPT_ID
       },
       tools: tools,
-      max_output_tokens: 32000,
+      max_output_tokens: 128000,
       previous_response_id: chat.lastResponseId || undefined,
-      text: {
-        "format": {
-          "type": "text"
-        },
-        "verbosity": "low"
-      },
       store: true    
     });
 
@@ -157,25 +151,13 @@ export default defineEventHandler(async (event) => {
     let isFirstChunk = true
     let hasSeenContent = false
 
-    // Create a stream that converts OpenAI's format to Vercel AI SDK format
-    const stream = new ReadableStream({
-      async start(controller) {
-        let isStreamClosed = false
-        
-        // Handle stream closure gracefully
-        const closeStream = () => {
-          if (!isStreamClosed) {
-            isStreamClosed = true
-            console.log(`[Stream] Closing stream. Total text length: ${fullText.length}`)
-            try {
-              controller.close()
-            } catch (e) {
-              // Stream already closed, ignore
-              console.log('Stream already closed:', e.message)
-            }
-          }
-        }
-        
+    // Create TransformStream for better Workers compatibility
+    const { readable, writable } = new TransformStream()
+    const writer = writable.getWriter()
+
+    // Process the stream in the background using event.waitUntil
+    event.waitUntil(
+      (async () => {
         try {
           // Log all events for debugging
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -241,7 +223,7 @@ export default defineEventHandler(async (event) => {
 
           // Handle content part added events to detect when LLM resumes after pausing
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          runner.on('response.content_part.added', (part: any) => {
+          runner.on('response.content_part.added', async (part: any) => {
             console.log('[Content Part Added]', { hasSeenContent, part })
             // If we've already seen content and a new part is added, 
             // this likely means the LLM paused and is resuming
@@ -250,15 +232,13 @@ export default defineEventHandler(async (event) => {
               const paragraphBreak = '\n\n'
               fullText += paragraphBreak
               const escapedBreak = JSON.stringify(paragraphBreak)
-              controller.enqueue(encoder.encode(`0:${escapedBreak}\n`))
+              await writer.write(encoder.encode(`0:${escapedBreak}\n`))
             }
           })
 
           // Handle streaming events
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          runner.on('response.output_text.delta', (diff: any) => {
-            if (isStreamClosed) return // Don't write to closed stream
-            
+          runner.on('response.output_text.delta', async (diff: any) => {
             const content = diff.delta
             
             // Mark that we've seen content
@@ -274,10 +254,9 @@ export default defineEventHandler(async (event) => {
             const escaped = JSON.stringify(content)
             const chunk = `0:${escaped}\n`
             try {
-              controller.enqueue(encoder.encode(chunk))
+              await writer.write(encoder.encode(chunk))
             } catch (e) {
-              console.error('[Stream] Failed to enqueue:', e)
-              closeStream()
+              console.error('[Stream] Failed to write:', e)
             }
           })
 
@@ -347,26 +326,24 @@ export default defineEventHandler(async (event) => {
           }
 
           // Send an explicit end-of-stream marker before closing
-          if (!isStreamClosed) {
-            try {
-              // Log the response ID and message length on server side
-              if (responseId) {
-                console.log('[Stream] Final response ID:', responseId)
-              }
-              console.log('[Stream] Final message length:', fullText.length)
-              
-              // Send the standard finish marker
-              const finishData = {
-                finishReason: "stop"
-              }
-              console.log('[Stream] Sending finish marker')
-              controller.enqueue(encoder.encode(`d:${JSON.stringify(finishData)}\n`))
-            } catch (e) {
-              console.log('[Stream] Failed to send end marker:', e)
+          try {
+            // Log the response ID and message length on server side
+            if (responseId) {
+              console.log('[Stream] Final response ID:', responseId)
             }
+            console.log('[Stream] Final message length:', fullText.length)
             
-            // Close the stream
-            closeStream()
+            // Send the standard finish marker
+            const finishData = {
+              finishReason: "stop"
+            }
+            console.log('[Stream] Sending finish marker')
+            await writer.write(encoder.encode(`d:${JSON.stringify(finishData)}\n`))
+          } catch (e) {
+            console.log('[Stream] Failed to send end marker:', e)
+          } finally {
+            // Always close the writer
+            await writer.close()
           }
         } catch (error: any) {
           console.error('Streaming error:', error)
@@ -374,25 +351,28 @@ export default defineEventHandler(async (event) => {
           // Handle timeout errors specifically
           if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT' || error?.code === 'ECONNABORTED') {
             console.error('OpenAI request timed out. The service may be slow.')
-            const timeoutError = new Error('OpenAI is taking longer than expected. Please try again.')
-            controller.error(timeoutError)
-          } else {
-            controller.error(error)
+          }
+          
+          // Try to close the writer with error
+          try {
+            await writer.abort(error)
+          } catch (e) {
+            console.error('Failed to abort writer:', e)
           }
         }
-      }
-    })
+      })()
+    )
 
-    return new Response(stream, {
+    // Return the readable stream immediately
+    // Workers will keep the connection alive via event.waitUntil
+    return new Response(readable, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'X-Vercel-AI-Data-Stream': 'v1',
-        // HTTP/2 and streaming optimizations
         'Cache-Control': 'no-cache, no-transform',
         'X-Content-Type-Options': 'nosniff',
-        'Connection': 'keep-alive',
-        'Transfer-Encoding': 'chunked',
         'X-Accel-Buffering': 'no' // Disable proxy buffering for better streaming
+        // Note: Removed 'Transfer-Encoding' and 'Connection' headers as Workers handles these automatically
       }
     })
   } catch (error: any) {
