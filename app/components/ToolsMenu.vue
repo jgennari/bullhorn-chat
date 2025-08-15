@@ -22,11 +22,11 @@ const isOpen = ref(false)
           Tools
         </div>
         
-        <div class="space-y-1 mt-1">
+        <div class="space-y-0.5 mt-1">
           <div
             v-for="tool in mcpTools"
             :key="tool.id"
-            class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-default/50 transition-colors"
+            class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-default/50 transition-colors"
           >
             <USwitch
               :model-value="tool.enabled"

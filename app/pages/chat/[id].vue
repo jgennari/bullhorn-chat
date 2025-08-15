@@ -15,6 +15,7 @@ const route = useRoute()
 const toast = useToast()
 const clipboard = useClipboard()
 const refreshChats = inject<() => Promise<void>>('refreshChats')
+const { getEnabledTools } = useMCPTools()
 
 // Only use Datadog on client side
 const { trackMessageSent } = import.meta.client
@@ -97,6 +98,11 @@ onUnmounted(() => {
 const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
   id: chat.value.id,
   api: `/api/chats/${chat.value.id}`,
+  body: {
+    get enabledTools() {
+      return getEnabledTools().map(t => t.id)
+    }
+  },
   initialMessages: chat.value.messages.map(message => ({
     id: message.id,
     content: message.content,
@@ -294,6 +300,7 @@ onMounted(() => {
           }"
           class="lg:pt-(--ui-header-height) pb-4 sm:pb-6"
           :spacing-offset="160"
+          name="message_list"
         >
           <template #content="{ message }">
             <MDCCached

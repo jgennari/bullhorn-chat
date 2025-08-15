@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     console.log(`[API] Processing request for chat ID: ${id}`)
     
     const body = await readBody(event)
-    const { messages: rawMessages } = body
+    const { messages: rawMessages, enabledTools = [] } = body
 
     // Transform messages to the format expected by the AI SDK
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,22 +110,62 @@ export default defineEventHandler(async (event) => {
     // Based on the SDK examples, the Responses API is accessed directly on the openai instance
     let responseId: string | undefined
 
-    // Build tools configuration with headers if authenticated
+    // Build tools configuration based on enabled tools
+    console.log(`[MCP] Enabled tools from client: ${JSON.stringify(enabledTools)}`)
     const mcpBaseURL = process.env.NUXT_BULLHORN_MCP_URL || 'https://mcp.bullhornlabs.app'
-    const tools: any[] = [{
-      type: 'mcp',
-      server_label: 'Bullhorn',
-      server_url: `${mcpBaseURL}/sse`,
-      require_approval: "never"
-    },
-    { type: "web_search_preview" }];
-
-    // Add authorization header if user has an access token
-    if (accessToken) {
-      tools[0].headers = {
-        'Authorization': `Bearer ${accessToken}`
+    const tools: any[] = []
+    
+    // Only add Bullhorn ATS MCP if enabled
+    if (enabledTools.includes('bullhorn-ats') && accessToken) {
+      const atsTool = {
+        type: 'mcp',
+        server_label: 'bullhorn-ats',
+        server_url: `${mcpBaseURL}/sse`,
+        require_approval: "never",
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
       }
+      
+      tools.push(atsTool)
     }
+    
+    // Only add Bullhorn Analytics MCP if enabled
+    if (enabledTools.includes('bullhorn-analytics') && accessToken) {
+      const analyticsTool = {
+        type: 'mcp',
+        server_label: 'bullhorn-analytics',
+        server_url: 'https://bhamcp.bullhornlabs.app/sse',
+        require_approval: "never",
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+      
+      tools.push(analyticsTool)
+    }
+    console.log(accessToken);
+    // Only add SourceBreaker MCP if enabled
+    if (enabledTools.includes('sourcebreaker') && accessToken) {
+      const sourcebreakerTool = {
+        type: 'mcp',
+        server_label: 'sourcebreaker',
+        server_url: 'https://sbmcp.bullhornlabs.app/sse',
+        require_approval: "never",
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+      
+      tools.push(sourcebreakerTool)
+    }
+    
+    // Only add web search if enabled
+    if (enabledTools.includes('web-search')) {
+      tools.push({ type: "web_search_preview" })
+    }
+    
+    console.log(`[MCP] 🔧 Configured ${tools.length} tools:`, tools.map(t => t.server_label || t.type))
 
     if (!process.env.NUXT_OPENAI_PROMPT_ID) {
       throw createError({
@@ -248,7 +288,6 @@ export default defineEventHandler(async (event) => {
             }
             
             fullText += content
-            console.log(`[Stream Delta] Received ${content.length} chars, total so far: ${fullText.length}`)
             
             // Send in Vercel AI SDK format with proper escaping
             const escaped = JSON.stringify(content)

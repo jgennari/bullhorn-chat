@@ -5,7 +5,7 @@ export const useMCPTools = () => {
       name: 'Bullhorn ATS',
       description: 'Access Bullhorn ATS data and functionality',
       enabled: true,
-      locked: true,
+      locked: false,
       comingSoon: false
     },
     {
@@ -13,24 +13,24 @@ export const useMCPTools = () => {
       name: 'Bullhorn Analytics',
       description: 'Access Bullhorn Analytics reports and insights',
       enabled: false,
-      locked: true,
-      comingSoon: true
+      locked: false,
+      comingSoon: false
     },
     {
-      id: 'bullhorn-time-expense',
-      name: 'Bullhorn Time & Expense',
-      description: 'Manage time tracking and expense reports',
+      id: 'sourcebreaker',
+      name: 'SourceBreaker',
+      description: 'Automate candidate search and business development with AI',
       enabled: false,
-      locked: true,
-      comingSoon: true
+      locked: false,
+      comingSoon: false
     },
     {
-      id: 'bullhorn-talent-platform',
-      name: 'Bullhorn Talent Platform',
-      description: 'Access talent acquisition and management features',
-      enabled: false,
-      locked: true,
-      comingSoon: true
+      id: 'web-search',
+      name: 'Web Search',
+      description: 'Search the web for current information',
+      enabled: true,
+      locked: false,
+      comingSoon: false
     }
   ])
 
