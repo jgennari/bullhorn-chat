@@ -139,7 +139,7 @@ export default eventHandler(async (event) => {
       try {
         const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString())
         userInfo = payload
-        console.log('Got user info from ID token:', { sub: payload.sub, email: payload.email, corporation_id: payload.corporation_id })
+        console.log('Got user info from ID token:', { sub: payload.sub, email: payload.email, corporation_id: payload.corporation_id, corporationName: payload.corporationName })
       } catch (e) {
         console.error('Failed to decode ID token:', e)
       }
@@ -153,7 +153,7 @@ export default eventHandler(async (event) => {
             Authorization: `Bearer ${access_token}`
           }
         })
-        console.log('Got user info from userinfo endpoint:', { sub: userInfo.sub, email: userInfo.email, corporation_id: userInfo.corporation_id })
+        console.log('Got user info from userinfo endpoint:', { sub: userInfo.sub, email: userInfo.email, corporation_id: userInfo.corporation_id, corporationName: userInfo.corporationName })
       } catch (e) {
         console.error('Failed to get userinfo:', e)
         
@@ -195,10 +195,35 @@ export default eventHandler(async (event) => {
       })
     }
     
-    // Extract corporation ID if available
+    // Extract corporation ID and name if available
     const corpId = userInfo.corporation_id || null
+    const corporationName = userInfo.corporationName || null
     
-    console.log(`User identification: sub=${userInfo.sub}, providerId=${providerId}, corpId=${corpId}`)
+    console.log(`User identification: sub=${userInfo.sub}, providerId=${providerId}, corpId=${corpId}, corporationName=${corporationName}`)
+    
+    // Create corporation if it doesn't exist
+    if (corpId && corporationName) {
+      const existingCorp = await db.query.corporations.findFirst({
+        where: (corp, { eq }) => eq(corp.id, corpId)
+      })
+      
+      if (!existingCorp) {
+        console.log(`Creating new corporation: ${corporationName} (ID: ${corpId})`)
+        await db.insert(tables.corporations).values({
+          id: corpId,
+          name: corporationName
+        })
+      } else {
+        console.log(`Corporation already exists: ${existingCorp.name} (ID: ${corpId})`)
+        // Optionally update corporation name if it has changed
+        if (existingCorp.name !== corporationName) {
+          console.log(`Updating corporation name from "${existingCorp.name}" to "${corporationName}"`)
+          await db.update(tables.corporations)
+            .set({ name: corporationName })
+            .where(eq(tables.corporations.id, corpId))
+        }
+      }
+    }
     
     // Find or create user
     let user = await db.query.users.findFirst({

@@ -2,6 +2,17 @@ import { randomUUID } from 'node:crypto'
 import { sql, relations } from 'drizzle-orm'
 import { sqliteTable, text, integer, index, unique } from 'drizzle-orm/sqlite-core'
 
+export const corporations = sqliteTable('corporations', {
+  id: integer().primaryKey(), // This will be the corpId from Bullhorn
+  name: text().notNull(),
+  prompt: text(),
+  createdAt: integer({ mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+})
+
+export const corporationsRelations = relations(corporations, ({ many }) => ({
+  users: many(users)
+}))
+
 export const users = sqliteTable('users', {
   id: text().primaryKey().$defaultFn(() => randomUUID()),
   email: text().notNull(),
@@ -18,8 +29,12 @@ export const users = sqliteTable('users', {
   unique().on(t.provider, t.providerId)
 ])
 
-export const usersRelations = relations(users, ({ many }) => ({
-  chats: many(chats)
+export const usersRelations = relations(users, ({ one, many }) => ({
+  chats: many(chats),
+  corporation: one(corporations, {
+    fields: [users.corpId],
+    references: [corporations.id]
+  })
 }))
 
 export const chats = sqliteTable('chats', {
