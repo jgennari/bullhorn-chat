@@ -139,7 +139,7 @@ export default eventHandler(async (event) => {
       try {
         const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString())
         userInfo = payload
-        console.log('Got user info from ID token:', { sub: payload.sub, email: payload.email })
+        console.log('Got user info from ID token:', { sub: payload.sub, email: payload.email, corporation_id: payload.corporation_id })
       } catch (e) {
         console.error('Failed to decode ID token:', e)
       }
@@ -153,7 +153,7 @@ export default eventHandler(async (event) => {
             Authorization: `Bearer ${access_token}`
           }
         })
-        console.log('Got user info from userinfo endpoint:', { sub: userInfo.sub, email: userInfo.email })
+        console.log('Got user info from userinfo endpoint:', { sub: userInfo.sub, email: userInfo.email, corporation_id: userInfo.corporation_id })
       } catch (e) {
         console.error('Failed to get userinfo:', e)
         
@@ -195,7 +195,10 @@ export default eventHandler(async (event) => {
       })
     }
     
-    console.log(`User identification: sub=${userInfo.sub}, providerId=${providerId}`)
+    // Extract corporation ID if available
+    const corpId = userInfo.corporation_id || null
+    
+    console.log(`User identification: sub=${userInfo.sub}, providerId=${providerId}, corpId=${corpId}`)
     
     // Find or create user
     let user = await db.query.users.findFirst({
@@ -217,20 +220,22 @@ export default eventHandler(async (event) => {
         username: userInfo.preferred_username || userInfo.email?.split('@')[0] || `user${providerId}`,
         provider: 'bullhorn',
         providerId: providerId,
+        corpId: corpId,
+        userType: 'user', // Default to regular user
         accessToken: access_token
       }).returning().get()
       
-      console.log(`Created new user: ${user.id} for Bullhorn user ${userInfo.sub}`)
+      console.log(`Created new user: ${user.id} for Bullhorn user ${userInfo.sub}, corpId: ${corpId}`)
       
       // TODO: Track user signup in Datadog
       // For server-side tracking, we would need to use @datadog/dd-trace
       // For now, we'll track this on the client side when the user first logs in
     } else {
-      console.log(`Found existing user: ${user.id} for Bullhorn user ${userInfo.sub}`)
+      console.log(`Found existing user: ${user.id} for Bullhorn user ${userInfo.sub}, updating corpId: ${corpId}`)
       
-      // Update existing user's access token
+      // Update existing user's access token and corpId
       await db.update(tables.users)
-        .set({ accessToken: access_token })
+        .set({ accessToken: access_token, corpId: corpId })
         .where(eq(tables.users.id, user.id))
       
       // Migrate anonymous chats to authenticated user

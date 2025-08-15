@@ -93,17 +93,27 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Get user's access token if authenticated
+    // Get user's details and access token if authenticated
     let accessToken: string | null = null
+    let userName: string | null = null
+    let userEmail: string | null = null
+    let corpId: number | null = null
+    
     if (session.user?.id) {
       const userId = session.user.id
       const user = await db.query.users.findFirst({
         where: (user, { eq }) => eq(user.id, userId),
         columns: {
-          accessToken: true
+          accessToken: true,
+          name: true,
+          email: true,
+          corpId: true
         }
       })
       accessToken = user?.accessToken || null
+      userName = user?.name || null
+      userEmail = user?.email || null
+      corpId = user?.corpId || null
     }
 
     // Use OpenAI Responses API with persistence
@@ -144,7 +154,7 @@ export default defineEventHandler(async (event) => {
       
       tools.push(analyticsTool)
     }
-    console.log(accessToken);
+    
     // Only add SourceBreaker MCP if enabled
     if (enabledTools.includes('sourcebreaker') && accessToken) {
       const sourcebreakerTool = {
@@ -166,6 +176,16 @@ export default defineEventHandler(async (event) => {
     }
     
     console.log(`[MCP] 🔧 Configured ${tools.length} tools:`, tools.map(t => t.server_label || t.type))
+    
+    // Build comma-separated list of enabled tools for prompt variable
+    const enabledToolNames = []
+    if (enabledTools.includes('bullhorn-ats')) enabledToolNames.push('Bullhorn ATS')
+    if (enabledTools.includes('bullhorn-analytics')) enabledToolNames.push('Bullhorn Analytics')
+    if (enabledTools.includes('sourcebreaker')) enabledToolNames.push('SourceBreaker')
+    if (enabledTools.includes('web-search')) enabledToolNames.push('Web Search')
+    const toolsList = enabledToolNames.join(', ') || 'None'
+    
+    console.log(`[Prompt Variables] User: ${userName || 'Anonymous'}, Tools: ${toolsList}`)
 
     if (!process.env.NUXT_OPENAI_PROMPT_ID) {
       throw createError({
@@ -178,7 +198,11 @@ export default defineEventHandler(async (event) => {
     const runner = (openai as any).responses.stream({
       input: lastMessage.content,
       prompt: {
-        "id": process.env.NUXT_OPENAI_PROMPT_ID
+        id: process.env.NUXT_OPENAI_PROMPT_ID,
+        variables: {
+          user: userName && userEmail ? `${userName} (${userEmail})` : 'Anonymous User',
+          tools: toolsList
+        }
       },
       tools: tools,
       max_output_tokens: 128000,

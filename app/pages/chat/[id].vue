@@ -108,6 +108,23 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
     content: message.content,
     role: message.role
   })),
+  // Custom fetch to only send the latest message
+  fetch: async (url, options) => {
+    const body = JSON.parse(options.body)
+    
+    // Only send the latest message instead of entire history
+    const optimizedBody = {
+      ...body,
+      messages: body.messages ? body.messages.slice(-1) : []
+    }
+    
+    console.log('[Chat] Optimized payload - sending only latest message')
+    
+    return fetch(url, {
+      ...options,
+      body: JSON.stringify(optimizedBody)
+    })
+  },
   onResponse(response) {
     console.log('[Chat] Stream started, response headers:', response.headers)
     // Start polling for title if this is the first message

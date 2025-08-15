@@ -10,6 +10,8 @@ export const users = sqliteTable('users', {
   username: text().notNull(),
   provider: text({ enum: ['bullhorn'] }).notNull(),
   providerId: integer().notNull(),
+  corpId: integer(),
+  userType: text({ enum: ['user', 'admin'] }).notNull().default('user'),
   accessToken: text(),
   createdAt: integer({ mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, t => [
