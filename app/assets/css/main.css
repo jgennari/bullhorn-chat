@@ -130,6 +130,8 @@
     padding: 0.5rem !important;
     font-size: 9pt !important;
     page-break-inside: avoid !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
   }
   
   body.print-messages-only code {
@@ -137,8 +139,35 @@
     font-size: 9pt !important;
   }
   
+  /* Handle table overflow in print */
+  body.print-messages-only table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+    page-break-inside: auto !important;
+  }
+  
+  body.print-messages-only th,
+  body.print-messages-only td {
+    padding: 0.25rem !important;
+    border: 1px solid #ddd !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    font-size: 8pt !important;
+  }
+  
+  /* For very wide tables, allow horizontal scrolling in print preview but wrap in actual print */
+  @media screen {
+    body.print-messages-only [name="message_list"] {
+      overflow-x: auto !important;
+    }
+  }
+  
   /* Add page margins */
   @page {
-    margin: 0.75in;
+    margin: 0.5in;
+    size: letter; /* Portrait orientation */
   }
 }
