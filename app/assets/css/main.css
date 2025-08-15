@@ -26,3 +26,119 @@
 [data-role="user"] p + p {
   margin-top: 1rem;
 }
+
+/* Print only messages mode */
+@media print {
+  /* Reset page margins */
+  @page {
+    margin: 0.75in;
+  }
+  
+  /* When printing messages only, hide UI elements but keep content structure */
+  body.print-messages-only header,
+  body.print-messages-only nav,
+  body.print-messages-only aside,
+  body.print-messages-only [class*="UChatPrompt"],
+  body.print-messages-only button,
+  body.print-messages-only .sticky,
+  body.print-messages-only [class*="UDashboardNavbar"],
+  body.print-messages-only [class*="UDashboardSidebar"],
+  body.print-messages-only [role="navigation"] {
+    display: none !important;
+  }
+  
+  /* Reset body and ensure visibility */
+  body.print-messages-only {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Ensure all parent containers are visible and properly sized */
+  body.print-messages-only * {
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  
+  /* Make sure the message list and its content is visible */
+  body.print-messages-only [name="message_list"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Ensure message content is visible but preserve inline elements */
+  body.print-messages-only [name="message_list"] p,
+  body.print-messages-only [name="message_list"] div,
+  body.print-messages-only [name="message_list"] pre,
+  body.print-messages-only [name="message_list"] ul,
+  body.print-messages-only [name="message_list"] ol,
+  body.print-messages-only [name="message_list"] li {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Style individual messages for print */
+  body.print-messages-only [data-role="user"],
+  body.print-messages-only [data-role="assistant"] {
+    page-break-inside: avoid !important;
+    margin: 0 0 1rem 0 !important;
+    padding: 0.75rem !important;
+    border: 1px solid #ddd !important;
+    border-radius: 0.375rem !important;
+    width: 100% !important;
+  }
+  
+  body.print-messages-only [data-role="user"] {
+    background-color: #f9f9f9 !important;
+  }
+  
+  body.print-messages-only [data-role="assistant"] {
+    background-color: white !important;
+  }
+  
+  /* Add role labels */
+  body.print-messages-only [data-role="user"]::before {
+    content: "User: ";
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  
+  body.print-messages-only [data-role="assistant"]::before {
+    content: "Assistant: ";
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Hide action buttons in messages */
+  body.print-messages-only [data-role] button,
+  body.print-messages-only [class*="actions"] {
+    display: none !important;
+  }
+  
+  /* Style code blocks */
+  body.print-messages-only pre {
+    background-color: #f5f5f5 !important;
+    border: 1px solid #ddd !important;
+    padding: 0.5rem !important;
+    font-size: 9pt !important;
+    page-break-inside: avoid !important;
+  }
+  
+  body.print-messages-only code {
+    background-color: #f5f5f5 !important;
+    font-size: 9pt !important;
+  }
+  
+  /* Add page margins */
+  @page {
+    margin: 0.75in;
+  }
+}

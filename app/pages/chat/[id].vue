@@ -230,6 +230,33 @@ function onFeedbackModalSubmit(comment: string) {
   })
 }
 
+function handlePrint() {
+  // Find the message list element by name attribute
+  const messageList = document.querySelector('[name="message_list"]')
+  if (!messageList) {
+    console.error('Message list element not found')
+    return
+  }
+  
+  // Debug: Log the element and its parent structure
+  console.log('Message list found:', messageList)
+  console.log('Parent structure:', {
+    parent: messageList.parentElement?.tagName,
+    grandparent: messageList.parentElement?.parentElement?.tagName
+  })
+  
+  // Add a print-specific class to body
+  document.body.classList.add('print-messages-only')
+  
+  // Trigger print dialog
+  window.print()
+  
+  // Clean up after print (whether cancelled or completed)
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('print-messages-only')
+  }, { once: true })
+}
+
 // Load existing feedback for messages
 async function loadFeedback() {
   for (const message of messages.value) {
@@ -329,6 +356,13 @@ onMounted(() => {
           <template #footer>
             <div class="flex items-center gap-2">
               <ToolsMenu />
+              <UButton
+                icon="i-lucide-printer"
+                label="Print"
+                variant="ghost"
+                class="hover:bg-gray-100 dark:hover:bg-white/10 focus:bg-gray-100 dark:focus:bg-white/10 text-gray-700 dark:text-white"
+                @click="handlePrint"
+              />
             </div>
           </template>
         </UChatPrompt>
