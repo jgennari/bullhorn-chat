@@ -7,6 +7,7 @@ defineProps<{
 
 const colorMode = useColorMode()
 const { user, clear } = useUserSession()
+const settingsModalOpen = ref(false)
 
 // Fetch full user data with corporation info
 const { data: userWithCorp } = await useFetch('/api/auth/me', {
@@ -45,6 +46,12 @@ const items = computed<DropdownMenuItem[][]>(() => {
   }
   
   return [labelItems, [{
+    label: 'Settings',
+    icon: 'i-lucide-settings',
+    onSelect() {
+      settingsModalOpen.value = true
+    }
+  }, {
     label: 'Appearance',
     icon: 'i-lucide-sun-moon',
     children: [{
@@ -117,3 +124,5 @@ const items = computed<DropdownMenuItem[][]>(() => {
     />
   </UDropdownMenu>
 </template>
+
+<ModalSettings v-model:open="settingsModalOpen" />
