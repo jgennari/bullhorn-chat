@@ -8,6 +8,10 @@ declare module '#auth-utils' {
     username: string
     provider: 'bullhorn'
     providerId: number
+    corpId?: number
+    userType?: 'user' | 'admin'
+    corporationName?: string
+    corporationPrompt?: string
   }
 }
 

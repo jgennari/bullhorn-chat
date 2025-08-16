@@ -8,57 +8,87 @@ defineProps<{
 const colorMode = useColorMode()
 const { user, clear } = useUserSession()
 
-const items = computed<DropdownMenuItem[][]>(() => ([[{
-  type: 'label',
-  label: user.value?.name || user.value?.username,
-  avatar: {
-    src: user.value?.avatar,
-    alt: user.value?.name || user.value?.username
-  }
-}], [{
-  label: 'Appearance',
-  icon: 'i-lucide-sun-moon',
-  children: [{
-    label: 'Light',
-    icon: 'i-lucide-sun',
-    type: 'checkbox',
-    checked: colorMode.value === 'light',
-    onSelect(e: Event) {
-      e.preventDefault()
+// Fetch full user data with corporation info
+const { data: userWithCorp } = await useFetch('/api/auth/me', {
+  immediate: false
+})
 
-      colorMode.preference = 'light'
-    }
-  }, {
-    label: 'Dark',
-    icon: 'i-lucide-moon',
-    type: 'checkbox',
-    checked: colorMode.value === 'dark',
-    onUpdateChecked(checked: boolean) {
-      if (checked) {
-        colorMode.preference = 'dark'
+// Try to fetch user data when user is available
+watch(user, async (newUser) => {
+  if (newUser?.id) {
+    await useFetch('/api/auth/me').then(({ data }) => {
+      if (data.value) {
+        userWithCorp.value = data.value
       }
-    },
-    onSelect(e: Event) {
-      e.preventDefault()
+    })
+  }
+}, { immediate: true })
+
+const items = computed<DropdownMenuItem[][]>(() => {
+  const userData = userWithCorp.value || user.value
+  const labelItems: DropdownMenuItem[] = [{
+    type: 'label',
+    label: userData?.name || userData?.username,
+    avatar: {
+      src: userData?.avatar,
+      alt: userData?.name || userData?.username
     }
   }]
-}, {
-  label: 'Log out',
-  icon: 'i-lucide-log-out',
-  async onSelect() {
-    try {
-      // Call the logout API to revoke the token
-      await $fetch('/api/auth/logout', { method: 'POST' })
-    } catch (error) {
-      // Log error but continue with logout
-      console.error('Failed to revoke token:', error)
-    }
-
-    // Clear the local session
-    clear()
-    navigateTo('/')
+  
+  // Add corporation name if available
+  if (userWithCorp.value?.corporationName) {
+    labelItems.push({
+      type: 'label',
+      label: userWithCorp.value.corporationName,
+      class: 'text-xs text-muted -mt-1'
+    })
   }
-}]]))
+  
+  return [labelItems, [{
+    label: 'Appearance',
+    icon: 'i-lucide-sun-moon',
+    children: [{
+      label: 'Light',
+      icon: 'i-lucide-sun',
+      type: 'checkbox',
+      checked: colorMode.value === 'light',
+      onSelect(e: Event) {
+        e.preventDefault()
+
+        colorMode.preference = 'light'
+      }
+    }, {
+      label: 'Dark',
+      icon: 'i-lucide-moon',
+      type: 'checkbox',
+      checked: colorMode.value === 'dark',
+      onUpdateChecked(checked: boolean) {
+        if (checked) {
+          colorMode.preference = 'dark'
+        }
+      },
+      onSelect(e: Event) {
+        e.preventDefault()
+      }
+    }]
+  }, {
+    label: 'Log out',
+    icon: 'i-lucide-log-out',
+    async onSelect() {
+      try {
+        // Call the logout API to revoke the token
+        await $fetch('/api/auth/logout', { method: 'POST' })
+      } catch (error) {
+        // Log error but continue with logout
+        console.error('Failed to revoke token:', error)
+      }
+
+      // Clear the local session
+      clear()
+      navigateTo('/')
+    }
+  }]]
+})
 </script>
 
 <template>

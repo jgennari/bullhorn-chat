@@ -139,7 +139,7 @@ export default eventHandler(async (event) => {
       try {
         const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString())
         userInfo = payload
-        console.log('Got user info from ID token:', { sub: payload.sub, email: payload.email, corporation_id: payload.corporation_id, corporationName: payload.corporationName })
+        console.log('Got user info from ID token:', { sub: payload.sub, email: payload.email, corporation_id: payload.corporation_id, corporation_name: payload.corporation_name })
       } catch (e) {
         console.error('Failed to decode ID token:', e)
       }
@@ -153,7 +153,7 @@ export default eventHandler(async (event) => {
             Authorization: `Bearer ${access_token}`
           }
         })
-        console.log('Got user info from userinfo endpoint:', { sub: userInfo.sub, email: userInfo.email, corporation_id: userInfo.corporation_id, corporationName: userInfo.corporationName })
+        console.log('Got user info from userinfo endpoint:', { sub: userInfo.sub, email: userInfo.email, corporation_id: userInfo.corporation_id, corporation_name: userInfo.corporation_name })
       } catch (e) {
         console.error('Failed to get userinfo:', e)
         
@@ -197,7 +197,7 @@ export default eventHandler(async (event) => {
     
     // Extract corporation ID and name if available
     const corpId = userInfo.corporation_id || null
-    const corporationName = userInfo.corporationName || null
+    const corporationName = userInfo.corporation_name || null
     
     console.log(`User identification: sub=${userInfo.sub}, providerId=${providerId}, corpId=${corpId}, corporationName=${corporationName}`)
     
