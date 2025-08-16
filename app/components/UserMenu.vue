@@ -123,6 +123,6 @@ const items = computed<DropdownMenuItem[][]>(() => {
       }"
     />
   </UDropdownMenu>
+  
+  <ModalSettings v-model="settingsModalOpen" />
 </template>
-
-<ModalSettings v-model:open="settingsModalOpen" />

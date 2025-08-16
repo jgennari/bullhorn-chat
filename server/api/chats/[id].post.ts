@@ -98,6 +98,8 @@ export default defineEventHandler(async (event) => {
     let userName: string | null = null
     let userEmail: string | null = null
     let corpId: number | null = null
+    let corpName: string | null = null
+    let corpPrompt: string | null = null
     
     if (session.user?.id) {
       const userId = session.user.id
@@ -114,6 +116,19 @@ export default defineEventHandler(async (event) => {
       userName = user?.name || null
       userEmail = user?.email || null
       corpId = user?.corpId || null
+      
+      // Fetch corporation name and prompt if user has a corpId
+      if (corpId) {
+        const corporation = await db.query.corporations.findFirst({
+          where: (corp, { eq }) => eq(corp.id, corpId),
+          columns: {
+            name: true,
+            prompt: true
+          }
+        })
+        corpName = corporation?.name || null
+        corpPrompt = corporation?.prompt || null
+      }
     }
 
     // Use OpenAI Responses API with persistence
@@ -185,7 +200,7 @@ export default defineEventHandler(async (event) => {
     if (enabledTools.includes('web-search')) enabledToolNames.push('Web Search')
     const toolsList = enabledToolNames.join(', ') || 'None'
     
-    console.log(`[Prompt Variables] User: ${userName || 'Anonymous'}, Tools: ${toolsList}`)
+    console.log(`[Prompt Variables] User: ${userName || 'Anonymous'}, Corp: ${corpName || 'None'}, Tools: ${toolsList}, Corp Prompt: ${corpPrompt ? 'Yes' : 'No'}`)
 
     if (!process.env.NUXT_OPENAI_PROMPT_ID) {
       throw createError({
@@ -200,8 +215,12 @@ export default defineEventHandler(async (event) => {
       prompt: {
         id: process.env.NUXT_OPENAI_PROMPT_ID,
         variables: {
-          user: userName && userEmail ? `${userName} (${userEmail})` : 'Anonymous User',
-          tools: toolsList
+          user_name: userName || 'Anonymous',
+          user_email: userEmail || '',
+          corp_id: corpId ? corpId.toString() : '',
+          corp_name: corpName || '',
+          tools: toolsList,
+          corp_prompt: corpPrompt || ''
         }
       },
       tools: tools,
