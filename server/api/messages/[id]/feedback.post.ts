@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
     .from(feedback)
     .where(
       and(
-        eq(feedback.messageId, messageId),
+        eq(feedback.messageId, messageId as string),
         eq(feedback.userId, session.user.id)
       )
     )
@@ -47,10 +47,10 @@ export default defineEventHandler(async (event) => {
     // Update existing feedback
     const [updated] = await useDrizzle().update(feedback)
       .set({
-        rating,
+        rating: rating as 'positive' | 'negative',
         comment
       })
-      .where(eq(feedback.id, existingFeedback[0].id))
+      .where(eq(feedback.id, existingFeedback[0]!.id))
       .returning()
 
     return updated
@@ -58,9 +58,9 @@ export default defineEventHandler(async (event) => {
     // Create new feedback
     const [created] = await useDrizzle().insert(feedback)
       .values({
-        messageId,
+        messageId: messageId as string,
         userId: session.user.id,
-        rating,
+        rating: rating as 'positive' | 'negative',
         comment
       })
       .returning()

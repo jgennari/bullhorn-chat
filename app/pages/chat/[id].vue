@@ -110,7 +110,7 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
   })),
   // Custom fetch to only send the latest message
   fetch: async (url, options) => {
-    const body = JSON.parse(options.body)
+    const body = JSON.parse((options?.body as string) || '{}')
     
     // Only send the latest message instead of entire history
     const optimizedBody = {
@@ -148,17 +148,18 @@ const { messages, input, handleSubmit, reload, stop, status, error } = useChat({
     
     // Check if we have response metadata in any field
     if (options) {
-      // Check various possible locations for responseId
-      const possibleResponseId = options.responseId || options.response_id || options.id
+      // Check various possible locations for responseId (using any to access dynamic properties)
+      const opts = options as any
+      const possibleResponseId = opts.responseId || opts.response_id || opts.id
       if (possibleResponseId) {
         console.log('[Chat] Response ID found:', possibleResponseId)
       }
       
       // Check for message length in options
-      if (options.messageLength !== undefined) {
-        console.log('[Chat] Server reported message length:', options.messageLength)
-        if (message.content?.length !== options.messageLength) {
-          console.warn('[Chat] Length mismatch! Client:', message.content?.length, 'Server:', options.messageLength)
+      if (opts.messageLength !== undefined) {
+        console.log('[Chat] Server reported message length:', opts.messageLength)
+        if (message.content?.length !== opts.messageLength) {
+          console.warn('[Chat] Length mismatch! Client:', message.content?.length, 'Server:', opts.messageLength)
         }
       }
     }

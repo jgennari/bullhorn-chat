@@ -12,13 +12,20 @@ export default defineEventHandler(async (event) => {
     }
 
   const { id: messageId } = getRouterParams(event)
+  
+  if (!messageId) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Message ID is required'
+    })
+  }
 
   // Get feedback for this message and user
   const userFeedback = await useDrizzle().select()
     .from(feedback)
     .where(
       and(
-        eq(feedback.messageId, messageId),
+        eq(feedback.messageId, messageId as string),
         eq(feedback.userId, session.user.id)
       )
     )

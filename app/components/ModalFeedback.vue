@@ -65,7 +65,7 @@ function handleCancel() {
               What went wrong?
             </h3>
             <UButton
-              color="gray"
+              color="neutral"
               variant="ghost"
               icon="i-heroicons-x-mark-20-solid"
               size="sm"
@@ -92,7 +92,7 @@ function handleCancel() {
         <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
           <div class="flex justify-end gap-3">
             <UButton
-              color="gray"
+              color="neutral"
               variant="ghost"
               label="Cancel"
               :disabled="loading"

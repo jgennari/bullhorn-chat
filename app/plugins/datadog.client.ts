@@ -19,7 +19,7 @@ export default defineNuxtPlugin(() => {
   datadogRum.init({
     applicationId: config.public.datadogApplicationId,
     clientToken: config.public.datadogClientToken,
-    site: config.public.datadogSite,
+    site: config.public.datadogSite as any,
     service: config.public.datadogServiceName,
     env: config.public.datadogEnv,
     version: '1.0.0',
@@ -29,7 +29,6 @@ export default defineNuxtPlugin(() => {
     trackResources: true,
     trackLongTasks: true,
     defaultPrivacyLevel: 'mask-user-input',
-    trackFrustrations: true,
     enableExperimentalFeatures: ['clickmap']
   })
 
@@ -39,7 +38,7 @@ export default defineNuxtPlugin(() => {
   // Initialize Datadog Logs
   datadogLogs.init({
     clientToken: config.public.datadogClientToken,
-    site: config.public.datadogSite,
+    site: config.public.datadogSite as any,
     service: config.public.datadogServiceName,
     env: config.public.datadogEnv,
     forwardErrorsToLogs: true,
