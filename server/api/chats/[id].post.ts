@@ -190,6 +190,19 @@ export default defineEventHandler(async (event) => {
       tools.push({ type: "web_search_preview" })
     }
     
+    // Hardcoded Google Workspace MCP (always enabled for testing)
+    const googleWorkspaceTool = {
+      type: 'mcp',
+      server_label: 'google-workspace',
+      server_url: 'https://google.bullhornlabs.app/mcp/',
+      require_approval: "never",
+      headers: {
+        'Authorization': 'Bearer replace'
+      }
+    }
+    tools.push(googleWorkspaceTool)
+    console.log('[MCP] Added hardcoded Google Workspace MCP for testing')
+    
     console.log(`[MCP] 🔧 Configured ${tools.length} tools:`, tools.map(t => t.server_label || t.type))
     
     // Build comma-separated list of enabled tools for prompt variable
@@ -198,6 +211,7 @@ export default defineEventHandler(async (event) => {
     if (enabledTools.includes('bullhorn-analytics')) enabledToolNames.push('Bullhorn Analytics')
     if (enabledTools.includes('sourcebreaker')) enabledToolNames.push('SourceBreaker')
     if (enabledTools.includes('web-search')) enabledToolNames.push('Web Search')
+    if (enabledTools.includes('google-workspace')) enabledToolNames.push('Google Workspace')
     const toolsList = enabledToolNames.join(', ') || 'None'
     
     console.log(`[Prompt Variables] User: ${userName || 'Anonymous'}, Corp: ${corpName || 'None'}, Tools: ${toolsList}, Corp Prompt: ${corpPrompt ? 'Yes' : 'No'}`)
