@@ -98,21 +98,157 @@ The application will be available at `http://localhost:3000`
 
 ## Architecture
 
+```mermaid
+graph TB
+    subgraph "Frontend - Vue/Nuxt Application"
+        UI[Vue 3 UI Components]
+        Store[Pinia State Management]
+        Composables[Vue Composables]
+        UI --> Store
+        UI --> Composables
+    end
+
+    subgraph "Backend - Nuxt Server Routes"
+        API[API Routes]
+        Auth[Authentication Routes]
+        SSE[SSE Streaming]
+        Session[Session Management]
+        API --> Session
+        Auth --> Session
+    end
+
+    subgraph "Database Layer"
+        D1[(Cloudflare D1/SQLite)]
+        D1 --> Users[Users Table]
+        D1 --> Chats[Chats Table]
+        D1 --> Messages[Messages Table]
+        D1 --> Corps[Corporations Table]
+        D1 --> Feedback[Feedback Table]
+    end
+
+    subgraph "Authentication Providers"
+        BullhornOAuth[Bullhorn OAuth 2.0]
+        GoogleOAuth[Google OAuth 2.1]
+        BullhornOAuth --> |JWT Tokens| Auth
+        GoogleOAuth --> |Access/Refresh Tokens| Auth
+    end
+
+    subgraph "MCP Servers - Model Context Protocol"
+        subgraph "Bullhorn ATS MCP"
+            ATSMCP[ATS Server]
+            ATSTools[Entity Tools<br/>- Candidates<br/>- Jobs<br/>- Clients<br/>- Contacts]
+            ATSAuth[OAuth Proxy]
+            ATSMCP --> ATSTools
+            ATSMCP --> ATSAuth
+        end
+
+        subgraph "Bullhorn Analytics MCP"
+            AnalyticsMCP[Analytics Server]
+            AnalyticsTools[Analytics Tools<br/>- Reports<br/>- Dashboards<br/>- Metrics]
+            AnalyticsCache[Redis Cache]
+            AnalyticsMCP --> AnalyticsTools
+            AnalyticsMCP --> AnalyticsCache
+        end
+
+        subgraph "SourceBreaker MCP"
+            SBMCP[SourceBreaker Server]
+            SBTools[Resume Tools<br/>- Parse<br/>- Search<br/>- Match]
+            IrisAPI[IRIS Client]
+            SBMCP --> SBTools
+            SBMCP --> IrisAPI
+        end
+
+        subgraph "Google Workspace MCP"
+            GoogleMCP[Workspace Server]
+            GoogleTools[Google Tools<br/>- Gmail<br/>- Calendar<br/>- Drive<br/>- Docs/Sheets]
+            GoogleAuth[OAuth 2.1 Handler]
+            GoogleMCP --> GoogleTools
+            GoogleMCP --> GoogleAuth
+        end
+    end
+
+    subgraph "External Services"
+        OpenAI[OpenAI API<br/>GPT-4]
+        BullhornAPI[Bullhorn REST API]
+        GoogleAPIs[Google APIs]
+        IrisService[IRIS Service]
+        RedisCloud[Redis Cloud]
+    end
+
+    %% Frontend to Backend connections
+    UI --> API
+    UI --> Auth
+    Composables --> API
+    Store --> SSE
+
+    %% Backend to Database connections
+    API --> D1
+    Auth --> D1
+
+    %% Backend to MCP connections
+    API --> |HTTP/SSE| ATSMCP
+    API --> |HTTP/SSE| AnalyticsMCP
+    API --> |HTTP/SSE| SBMCP
+    API --> |HTTP/SSE| GoogleMCP
+
+    %% Backend to External Services
+    API --> |Streaming| OpenAI
+
+    %% MCP to External Services
+    ATSAuth --> BullhornAPI
+    AnalyticsMCP --> BullhornAPI
+    SBMCP --> IrisService
+    GoogleAuth --> GoogleAPIs
+    AnalyticsCache --> RedisCloud
+
+    %% Styling
+    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef backend fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef mcp fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef external fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef auth fill:#fff8e1,stroke:#f57f17,stroke-width:2px
+
+    class UI,Store,Composables frontend
+    class API,Auth,SSE,Session backend
+    class D1,Users,Chats,Messages,Corps,Feedback database
+    class ATSMCP,ATSTools,ATSAuth,AnalyticsMCP,AnalyticsTools,AnalyticsCache,SBMCP,SBTools,IrisAPI,GoogleMCP,GoogleTools,GoogleAuth mcp
+    class OpenAI,BullhornAPI,GoogleAPIs,IrisService,RedisCloud external
+    class BullhornOAuth,GoogleOAuth auth
+```
+
 ### Technology Stack
 
 - **Frontend**: Vue 3 + Nuxt 3 for a modern, performant UI
 - **UI Components**: Nuxt UI Pro for consistent, accessible components
-- **AI Integration**: OpenAI GPT-4 with Vercel AI SDK
-- **Authentication**: OAuth2 with secure session management
+- **AI Integration**: OpenAI GPT-4 with Vercel AI SDK for streaming responses
+- **Authentication**: Dual OAuth flows (Bullhorn OAuth 2.0, Google OAuth 2.1 with PKCE)
 - **Database**: SQLite (development) / Cloudflare D1 (production)
 - **Hosting**: Optimized for Cloudflare Workers
+- **MCP Integration**: Model Context Protocol servers for secure API access
+
+### Key Components
+
+#### MCP Servers (Model Context Protocol)
+- **Bullhorn ATS MCP**: Provides secure access to Bullhorn REST API with entity operations (candidates, jobs, clients, contacts)
+- **Bullhorn Analytics MCP**: Handles analytics, reporting, and dashboard data with Redis caching
+- **SourceBreaker MCP**: Integrates with IRIS for resume parsing, searching, and matching
+- **Google Workspace MCP**: Manages Google services integration (Gmail, Calendar, Drive, Docs, Sheets)
+
+#### Authentication Flow
+1. **Bullhorn OAuth**: Primary authentication for Bullhorn ATS access
+2. **Google OAuth**: Secondary authentication for Google Workspace features
+3. **Session Management**: Secure token storage and rotation
+4. **MCP Session Tokens**: Separate authentication layer for MCP server communication
 
 ### Security
 
 - All API calls are authenticated and encrypted
-- Session tokens are securely stored and rotated
-- No Bullhorn credentials are stored locally
+- OAuth tokens are securely stored server-side
+- Session tokens are rotated regularly
+- No credentials are stored client-side
 - Rate limiting and request validation
+- PKCE implementation for OAuth 2.1 flows
 
 ## Production Deployment
 
