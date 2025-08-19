@@ -24,6 +24,11 @@ export const users = sqliteTable('users', {
   corpId: integer(),
   userType: text({ enum: ['user', 'admin'] }).notNull().default('user'),
   accessToken: text(),
+  // Google OAuth fields
+  googleAccessToken: text(),
+  googleRefreshToken: text(),
+  googleTokenExpiresAt: integer({ mode: 'timestamp' }),
+  googleEmail: text(),
   createdAt: integer({ mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, t => [
   unique().on(t.provider, t.providerId)

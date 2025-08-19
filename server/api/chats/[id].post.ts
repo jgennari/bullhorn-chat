@@ -190,20 +190,62 @@ export default defineEventHandler(async (event) => {
       tools.push({ type: "web_search_preview" })
     }
     
-    // Hardcoded Google Workspace MCP (always enabled for testing)
-    const googleWorkspaceTool = {
-      type: 'mcp',
-      server_label: 'google-workspace',
-      server_url: 'https://google.bullhornlabs.app/mcp/',
-      require_approval: "never",
-      headers: {
-        'Authorization': 'Bearer replace'
+    // Add Google Workspace MCP if enabled and user has Google auth
+    if (enabledTools.includes('google-workspace')) {
+      // Check if user has Google auth
+      let googleToken: string | null = null
+      
+      if (session.user?.id) {
+        const userGoogle = await db.query.users.findFirst({
+          where: (user, { eq }) => eq(user.id, session.user!.id),
+          columns: {
+            googleAccessToken: true,
+            googleTokenExpiresAt: true,
+            googleRefreshToken: true
+          }
+        })
+        
+        if (userGoogle?.googleAccessToken) {
+          // Check if token is expired
+          const now = new Date()
+          const expiresAt = userGoogle.googleTokenExpiresAt ? new Date(userGoogle.googleTokenExpiresAt) : null
+          
+          if (expiresAt && now >= expiresAt && userGoogle.googleRefreshToken) {
+            // Token expired, need to refresh
+            console.log('[Google] Token expired, refreshing...')
+            
+            // Note: In production, you'd want to call the refresh endpoint here
+            // For now, we'll skip if expired
+            console.log('[Google] Token refresh needed but skipping for now')
+          } else {
+            // Token is still valid
+            googleToken = userGoogle.googleAccessToken
+          }
+        }
+      }
+      
+      if (googleToken) {
+        const googleWorkspaceTool = {
+          type: 'mcp',
+          server_label: 'google-workspace',
+          server_url: 'https://google.bullhornlabs.app/mcp/',
+          require_approval: "never",
+          headers: {
+            'Authorization': `Bearer ${googleToken}`
+          }
+        }
+        tools.push(googleWorkspaceTool)
+        console.log('[MCP] Added Google Workspace MCP with server-managed token')
+      } else {
+        console.log('[MCP] Google Workspace enabled but no valid token available')
       }
     }
-    tools.push(googleWorkspaceTool)
-    console.log('[MCP] Added hardcoded Google Workspace MCP for testing')
     
     console.log(`[MCP] 🔧 Configured ${tools.length} tools:`, tools.map(t => t.server_label || t.type))
+    
+    // DEBUG: Dump full tools array with auth headers
+    console.log('[DEBUG] Full tools array with authentication:')
+    console.log(JSON.stringify(tools, null, 2))
     
     // Build comma-separated list of enabled tools for prompt variable
     const enabledToolNames = []

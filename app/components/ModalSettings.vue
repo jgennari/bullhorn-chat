@@ -183,6 +183,9 @@ const handleLogout = async () => {
           </div>
 
         <div class="space-y-6 min-h-[200px] mt-6">
+          <!-- Google Workspace Settings -->
+          <GoogleAuthSimple />
+          
           <!-- Corporation Settings - Only for admins -->
           <div v-if="userWithCorp?.userType === 'admin' && userWithCorp?.corporationName" class="space-y-3">
             <h4 class="text-sm font-medium text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-700">

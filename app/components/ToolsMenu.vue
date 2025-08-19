@@ -1,6 +1,38 @@
 <script setup lang="ts">
-const { mcpTools, toggleTool } = useMCPTools()
+const { mcpTools, toggleTool, isGoogleAuthenticated } = useMCPTools()
+const { initiateAuth: initiateGoogleAuth } = useGoogleAuth()
 const isOpen = ref(false)
+const toast = useToast()
+
+const handleToolToggle = async (toolId: string) => {
+  const tool = mcpTools.value.find(t => t.id === toolId)
+  
+  // Check if tool requires Google auth and user is not authenticated
+  if (tool?.requiresAuth && tool.authProvider === 'google' && !isGoogleAuthenticated.value) {
+    // Prompt for authentication
+    const success = await initiateGoogleAuth()
+    if (success) {
+      // Now toggle the tool
+      toggleTool(toolId)
+      toast.add({
+        title: 'Success',
+        description: 'Google Workspace connected and enabled',
+        icon: 'i-lucide-check-circle',
+        color: 'success'
+      })
+    } else {
+      toast.add({
+        title: 'Authentication Required',
+        description: 'Please connect Google Workspace to use this tool',
+        icon: 'i-lucide-info',
+        color: 'neutral'
+      })
+    }
+  } else {
+    // Normal toggle
+    toggleTool(toolId)
+  }
+}
 </script>
 
 <template>
@@ -32,12 +64,26 @@ const isOpen = ref(false)
               :model-value="tool.enabled"
               :disabled="tool.locked"
               size="sm"
-              @update:model-value="() => toggleTool(tool.id)"
+              @update:model-value="() => handleToolToggle(tool.id)"
             />
             
             <div class="flex-1">
-              <div class="text-sm font-medium text-default-900">
-                {{ tool.name }}
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-default-900">
+                  {{ tool.name }}
+                </span>
+                <!-- Show auth indicator for Google Workspace -->
+                <Icon 
+                  v-if="tool.requiresAuth && tool.authProvider === 'google' && isGoogleAuthenticated"
+                  name="i-lucide-check-circle"
+                  class="w-3 h-3 text-success"
+                />
+                <span 
+                  v-else-if="tool.requiresAuth && tool.authProvider === 'google' && !isGoogleAuthenticated"
+                  class="text-xs text-gray-500"
+                >
+                  Auth required
+                </span>
               </div>
               <div class="text-xs text-default-500 mt-0.5">
                 {{ tool.description }}
